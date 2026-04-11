@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553703496495",
+    "project_id": "utmsports-620f9",
+    "storage_bucket": "utmsports-620f9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553703496495:android:1084d5521e6055b29e1fda",
+        "android_client_info": {
+          "package_name": "com.example.utmsportsplus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmhTLOHoN70vIn_tcoQnysMivBBOOTGt4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
