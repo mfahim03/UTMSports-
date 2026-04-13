@@ -2,7 +2,7 @@ class UserModel {
   final String uid;
   final String email;
   final String name;
-  final String role; // 'student' | 'organiser' | 'admin'
+  final String role;
   final String? phone;
   final String? matric;
 

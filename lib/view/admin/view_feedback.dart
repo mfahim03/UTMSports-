@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import '../../model/feedback_model.dart';
 import '../../viewmodel/feedback_viewmodel.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  DESIGN TOKENS  (shared palette)
-// ─────────────────────────────────────────────────────────────────────────────
 class _T {
   static const maroon      = Color(0xFF800000);
   static const maroonDark  = Color(0xFF5C0000);
@@ -35,9 +33,7 @@ class _T {
       categoryColor(cat).withOpacity(0.08);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT
-// ─────────────────────────────────────────────────────────────────────────────
 class ViewFeedbackPage extends StatelessWidget {
   const ViewFeedbackPage({super.key});
 
@@ -50,9 +46,7 @@ class ViewFeedbackPage extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  CONTENT
-// ─────────────────────────────────────────────────────────────────────────────
 class _ViewFeedbackContent extends StatelessWidget {
   const _ViewFeedbackContent();
 
@@ -70,13 +64,13 @@ class _ViewFeedbackContent extends StatelessWidget {
         backgroundColor: _T.bg,
         body: Column(
           children: [
-            // ── Maroon header ──────────────────────────────────────────────
+            // Maroon header 
             _buildHeader(context, vm, mq),
 
-            // ── Stats row ─────────────────────────────────────────────────
+            // Stats row 
             _StatsRow(stream: vm.stream),
 
-            // ── Feed ──────────────────────────────────────────────────────
+            // Feed 
             Expanded(
               child: StreamBuilder<List<FeedbackModel>>(
                 stream: vm.stream,
@@ -109,7 +103,7 @@ class _ViewFeedbackContent extends StatelessWidget {
     );
   }
 
-  // ── HEADER ──────────────────────────────────────────────────────────────────
+  // HEADER 
   Widget _buildHeader(
       BuildContext context, FeedbackViewModel vm, MediaQueryData mq) {
     return Container(
@@ -158,7 +152,7 @@ class _ViewFeedbackContent extends StatelessWidget {
             ),
           ),
 
-          // ── Category filter chips ────────────────────────────────────
+          // Category filter chips 
           SizedBox(
             height: 44,
             child: ListView.builder(
@@ -207,9 +201,7 @@ class _ViewFeedbackContent extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  STATS ROW  — quick at-a-glance summary
-// ─────────────────────────────────────────────────────────────────────────────
 class _StatsRow extends StatelessWidget {
   final Stream<List<FeedbackModel>> stream;
   const _StatsRow({required this.stream});
@@ -320,9 +312,7 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  FEEDBACK CARD
-// ─────────────────────────────────────────────────────────────────────────────
 class _FeedbackCard extends StatefulWidget {
   final FeedbackModel item;
   const _FeedbackCard({required this.item});
@@ -381,7 +371,7 @@ class _FeedbackCardState extends State<_FeedbackCard>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Top row: avatar + name + category ─────────────────────
+                // Top row: avatar + name + category 
                 Row(
                   children: [
                     CircleAvatar(
@@ -437,7 +427,7 @@ class _FeedbackCardState extends State<_FeedbackCard>
 
                 const SizedBox(height: 12),
 
-                // ── Stars + date + chevron ─────────────────────────────────
+                // Stars + date + chevron 
                 Row(
                   children: [
                     // Stars
@@ -492,7 +482,7 @@ class _FeedbackCardState extends State<_FeedbackCard>
                   ],
                 ),
 
-                // ── Message (animated expand) ──────────────────────────────
+                // Message (animated expand) 
                 SizeTransition(
                   sizeFactor: _expandAnim,
                   axisAlignment: -1,
@@ -555,9 +545,7 @@ class _FeedbackCardState extends State<_FeedbackCard>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  EMPTY PLACEHOLDER
-// ─────────────────────────────────────────────────────────────────────────────
 class _EmptyPlaceholder extends StatelessWidget {
   final String category;
   const _EmptyPlaceholder({required this.category});
@@ -597,9 +585,7 @@ class _EmptyPlaceholder extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ERROR PLACEHOLDER
-// ─────────────────────────────────────────────────────────────────────────────
 class _ErrorPlaceholder extends StatelessWidget {
   final String message;
   const _ErrorPlaceholder({required this.message});

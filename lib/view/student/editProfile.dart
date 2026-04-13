@@ -14,6 +14,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _matricCtrl;
+  bool _isSaving = false;
 
   static const _maroon = Color(0xFF800000);
 
@@ -21,8 +22,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
     final user = context.read<AuthViewModel>().currentUser;
-    _nameCtrl = TextEditingController(text: user?.name ?? '');
-    _phoneCtrl = TextEditingController(text: user?.phone ?? '');
+    _nameCtrl   = TextEditingController(text: user?.name   ?? '');
+    _phoneCtrl  = TextEditingController(text: user?.phone  ?? '');
     _matricCtrl = TextEditingController(text: user?.matric ?? '');
   }
 
@@ -32,6 +33,42 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _phoneCtrl.dispose();
     _matricCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
+
+    try {
+      final authVm = context.read<AuthViewModel>();
+      await authVm.updateProfile(
+        name:   _nameCtrl.text.trim(),
+        phone:  _phoneCtrl.text.trim(),
+        matric: _matricCtrl.text.trim(),
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profile updated successfully'),
+            backgroundColor: Color(0xFF800000),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update: $e'),
+            backgroundColor: Colors.red.shade700,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -85,45 +122,58 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(user?.email ?? '',
-                  style: TextStyle(
-                      color: Colors.grey.shade500, fontSize: 13)),
+              Text(
+                user?.email ?? '',
+                style: TextStyle(
+                    color: Colors.grey.shade500, fontSize: 13),
+              ),
               const SizedBox(height: 28),
 
-              _field(ctrl: _nameCtrl, label: 'Full Name', icon: Icons.badge_outlined,
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null),
+              _field(
+                ctrl: _nameCtrl,
+                label: 'Full Name',
+                icon: Icons.badge_outlined,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Required' : null,
+              ),
               const SizedBox(height: 16),
-              _field(ctrl: _phoneCtrl, label: 'Phone Number', icon: Icons.phone_outlined,
-                  keyboard: TextInputType.phone),
+              _field(
+                ctrl: _phoneCtrl,
+                label: 'Phone Number',
+                icon: Icons.phone_outlined,
+                keyboard: TextInputType.phone,
+              ),
               const SizedBox(height: 16),
-              _field(ctrl: _matricCtrl, label: 'Matric No.', icon: Icons.numbers_rounded),
+              _field(
+                ctrl: _matricCtrl,
+                label: 'Matric No.',
+                icon: Icons.numbers_rounded,
+              ),
               const SizedBox(height: 32),
 
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Profile updated successfully'),
-                          backgroundColor: Color(0xFF800000),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  },
+                  onPressed: _isSaving ? null : _save,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _maroon,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text('Save Changes',
-                      style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Save Changes',
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
                 ),
               ),
             ],
@@ -159,7 +209,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
             borderSide: BorderSide(color: Colors.grey.shade300)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _maroon, width: 1.8)),
+            borderSide:
+                const BorderSide(color: _maroon, width: 1.8)),
       ),
     );
   }

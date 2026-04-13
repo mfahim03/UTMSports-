@@ -47,6 +47,22 @@ class AuthRepository {
     return UserModel.fromMap(doc.id, doc.data()!);
   }
 
+  // ── Update profile ────────────────────────────────────────────────────────
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+    required String matric,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) throw Exception('No logged in user.');
+
+    await _db.collection('users').doc(uid).update({
+      'name':   name,
+      'phone':  phone,
+      'matric': matric,
+    });
+  }
+
   // ── Sign out ──────────────────────────────────────────────────────────────
   Future<void> signOut() => _auth.signOut();
 }

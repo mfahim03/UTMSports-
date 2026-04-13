@@ -60,7 +60,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               index: _navIndex,
               children: [
                 _buildHome(ctx, user),
-                const ViewAchievementsPage(embedded: true),
+                const ViewEventsPage(embedded: true),
                 const BookFacilityPage(embedded: true),
                 const ViewBookingPage(embedded: true),
                 const SubmitFeedbackPage(embedded: true),
@@ -94,64 +94,155 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   // ── Header ────────────────────────────────────────────────────────────────
 
+// ── Header ────────────────────────────────────────────────────────────────
+
   Widget _buildHeader(user) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Row(
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF5C0000), Color(0xFF800000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EditProfilePage()),
-            ),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: _maroon.withOpacity(0.3), width: 2),
-                color: _maroon.withOpacity(0.08),
-              ),
-              child: user?.name.isNotEmpty == true
-                  ? Center(
-                      child: Text(
-                        user!.name[0].toUpperCase(),
-                        style: const TextStyle(
-                            color: _maroon,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 18),
-                      ),
-                    )
-                  : const Icon(Icons.person_outline_rounded,
-                      color: _maroon, size: 26),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Welcome back,',
-                    style:
-                        TextStyle(fontSize: 13, color: Colors.grey)),
-                Text(
-                  user?.name ?? 'Student',
-                  style: const TextStyle(
-                      fontSize: 17, fontWeight: FontWeight.w800),
-                  overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EditProfilePage()),
                 ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined,
-                color: Colors.black87, size: 26),
-            onPressed: () {},
+                child: Container(
+                  padding: const EdgeInsets.all(2.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: Colors.white.withOpacity(0.55), width: 2),
+                  ),
+                  child: CircleAvatar(
+                    radius: 22,
+                    backgroundColor: const Color(0xFFAA3333),
+                    child: user?.name.isNotEmpty == true
+                        ? Text(
+                            user!.name[0].toUpperCase(),
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 18),
+                          )
+                        : const Icon(Icons.person_rounded,
+                            color: Colors.white, size: 24),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Welcome back,',
+                        style: TextStyle(
+                            fontSize: 11.5,
+                            color: Colors.white70,
+                            letterSpacing: 0.2)),
+                    Text(
+                      user?.name ?? 'Student',
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.3),
+                    ),
+                  ],
+                ),
+              ),
+              // Notification button
+              _headerIconBtn(
+                icon: Icons.notifications_outlined,
+                badge: true,
+                onTap: () {},
+              ),
+              const SizedBox(width: 6),
+              // Logout button
+              _headerIconBtn(
+                icon: Icons.logout_rounded,
+                onTap: () => _signOut(context),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  Widget _headerIconBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool badge = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            if (badge)
+              Positioned(
+                top: 7,
+                right: 7,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                      color: Color(0xFFFF6B6B), shape: BoxShape.circle),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _signOut(BuildContext context) async {
+    final authVm = context.read<AuthViewModel>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Sign Out',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF800000)),
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      await authVm.signOut();
+      if (context.mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    }
   }
 
   // ── Search bar ────────────────────────────────────────────────────────────
@@ -311,8 +402,17 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       fontSize: 18, fontWeight: FontWeight.w800)),
               const Spacer(),
               GestureDetector(
-                onTap: () => setState(
-                    () => _navIndex = _currentTab == 0 ? 3 : 1),
+                onTap: () {
+                  if (_currentTab == 0) {
+                    setState(() => _navIndex = 3);
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ViewAchievementsPage()),
+                    );
+                  }
+                },
                 child: Text('See all',
                     style: TextStyle(
                         fontSize: 12,
@@ -338,7 +438,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
             )
           else
             _LiveAchievements(
-              onSeeAll: () => setState(() => _navIndex = 1),
+              onSeeAll: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const ViewAchievementsPage()),
+              ),
             ),
         ],
       ),
@@ -382,9 +486,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
   Widget _buildBottomNav() {
     final items = [
       Icons.home_rounded,
-      Icons.emoji_events_rounded,
+      Icons.event_outlined,
       Icons.add_circle_outline_rounded,
-      Icons.calendar_today_outlined,
+      Icons.confirmation_number_outlined,
       Icons.feedback_outlined,
     ];
 
@@ -486,7 +590,7 @@ class _LiveBookings extends StatelessWidget {
         }
 
         final all = snap.data ?? [];
-        // Show only upcoming confirmed, max 2 on home
+        // Show only upcoming confirmed, max 3 on home
         final upcoming = all
             .where((b) =>
                 b.date.compareTo(todayStr) >= 0 &&

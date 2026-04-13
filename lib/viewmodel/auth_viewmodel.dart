@@ -57,6 +57,30 @@ class AuthViewModel extends ChangeNotifier {
     _set(AuthStatus.idle);
   }
 
+  // ── Update profile ────────────────────────────────────────────────────────
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+    required String matric,
+  }) async {
+    _set(AuthStatus.loading);
+    try {
+      await _repo.updateProfile(
+        name: name,
+        phone: phone,
+        matric: matric,
+      );
+      _currentUser = _currentUser?.copyWith(
+        name: name,
+        phone: phone,
+        matric: matric,
+      );
+      _set(AuthStatus.success);
+    } catch (e) {
+      _setError(_friendlyError(e));
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────────────────────
   void _set(AuthStatus s) {
     _status = s;
