@@ -156,7 +156,7 @@ class _LoginPageState extends State<LoginPage>
                     children: [
                       const SizedBox(height: 24),
 
-                    // Logo - Three running people
+                    // Logo
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
