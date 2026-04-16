@@ -15,7 +15,9 @@ class _LoginPageState extends State<LoginPage>
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+
   bool _obscure = true;
+
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
 
@@ -38,8 +40,63 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
+  // ── Forgot Password Dialog ─────────────────────────────
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailCtrl = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Reset Password"),
+        content: TextField(
+          controller: emailCtrl,
+          decoration: const InputDecoration(
+            labelText: "Enter your email",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailCtrl.text.trim();
+              if (email.isEmpty || !email.contains('@')) return;
+
+              final vm = context.read<AuthViewModel>();
+              await vm.sendPasswordReset(email);
+
+              if (!mounted) return;
+
+              Navigator.pop(context);
+
+              if (vm.status == AuthStatus.success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Reset link sent to your email"),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(vm.errorMessage ?? "Error"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text("Send"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Login ─────────────────────────────────────────────
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+
     FocusScope.of(context).unfocus();
 
     final vm = context.read<AuthViewModel>();
@@ -56,7 +113,6 @@ class _LoginPageState extends State<LoginPage>
         SnackBar(
           content: Text(vm.errorMessage!),
           backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -70,19 +126,19 @@ class _LoginPageState extends State<LoginPage>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ── Background image ──────────────────────────────────────
+          // Background
           Image.asset(
             'assets/image/background.png',
             fit: BoxFit.cover,
           ),
 
-          // ── Dark maroon overlay for readability ───────────────────
+          // Overlay
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Color(0x66800000), // maroon at ~40% opacity
-                  Color(0x993D0000), // dark maroon at ~60% opacity
+                  Color(0x66800000),
+                  Color.fromARGB(102, 128, 67, 67),     
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -90,7 +146,6 @@ class _LoginPageState extends State<LoginPage>
             ),
           ),
 
-          // ── Content ───────────────────────────────────────────────
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -99,53 +154,80 @@ class _LoginPageState extends State<LoginPage>
                   opacity: _fadeAnim,
                   child: Column(
                     children: [
-                      // ── Logo / Brand ──────────────────────────────
                       const SizedBox(height: 24),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.12),
-                          border: Border.all(
-                              color: Colors.white.withOpacity(0.3), width: 2),
+
+                    // Logo - Three running people
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Left runner (behind)
+                        Transform.translate(
+                          offset: const Offset(20, 8),
+                          child: const Icon(
+                            Icons.directions_run,
+                            size: 38,
+                            color: Color.fromARGB(255, 255, 255, 255),
+                          ),
                         ),
-                        child: const Icon(Icons.sports_soccer,
-                            size: 56, color: Colors.white),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'UTMSports+',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: 1.2,
+                        // Middle runner (front, largest)
+                        const Icon(
+                          Icons.directions_run,
+                          size: 56,
+                          color: Color(0xFF800000),
+                        ),
+                        // Right runner (behind)
+                        Transform.translate(
+                          offset: const Offset(-25, 8),
+                          child: const Icon(
+                            Icons.directions_run,
+                            size: 38,
+                            color: Color.fromARGB(255, 255, 255, 255),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                      const SizedBox(height: 10),
+
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'UTM',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF800000),
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'Sports',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '+',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF800000),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Sign in to continue',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.7),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+
                       const SizedBox(height: 40),
 
-                      // ── Card ──────────────────────────────────────
+                      // ── Card ─────────────────────────────
                       Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.95),
+                          color: Colors.white.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
-                              blurRadius: 30,
-                              offset: const Offset(0, 12),
-                            ),
-                          ],
                         ),
                         child: Form(
                           key: _formKey,
@@ -163,6 +245,7 @@ class _LoginPageState extends State<LoginPage>
                                         ? 'Enter a valid email'
                                         : null,
                               ),
+
                               const SizedBox(height: 16),
 
                               // Password
@@ -183,38 +266,41 @@ class _LoginPageState extends State<LoginPage>
                                         ? 'Minimum 6 characters'
                                         : null,
                               ),
-                              const SizedBox(height: 28),
 
-                              // Submit button
+                              // Forgot Password
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: TextButton(
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  onPressed: () => _showForgotPasswordDialog(context),
+                                  child: const Text(
+                                    "Forgot Password?",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF800000),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 15),
+
+                              // Sign In Button
                               SizedBox(
-                                height: 52,
+                                height: 50,
                                 child: ElevatedButton(
                                   onPressed: vm.isLoading ? null : _submit,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF800000),
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    elevation: 2,
+                                    foregroundColor: Colors.white, // ✅ fixes invisible text
                                   ),
                                   child: vm.isLoading
-                                      ? const SizedBox(
-                                          width: 22,
-                                          height: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          'Sign In',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.5,
-                                          ),
-                                        ),
+                                      ? const CircularProgressIndicator(color: Colors.white)
+                                      : const Text("Sign In"),
                                 ),
                               ),
                             ],
@@ -224,17 +310,14 @@ class _LoginPageState extends State<LoginPage>
 
                       const SizedBox(height: 24),
 
-                      // ── Register link ─────────────────────────────
                       TextButton(
                         onPressed: () =>
                             Navigator.of(context).pushNamed('/register'),
                         child: const Text(
                           "Don't have an account? Register",
-                          style:
-                              TextStyle(color: Colors.white70, fontSize: 13),
+                          style: TextStyle(color: Colors.white70),
                         ),
                       ),
-                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -247,8 +330,7 @@ class _LoginPageState extends State<LoginPage>
   }
 }
 
-// ── Shared text-field widget ──────────────────────────────────────────────────
-
+// ── Input Field ─────────────────────────────
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
@@ -277,24 +359,9 @@ class _InputField extends StatelessWidget {
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, size: 20),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.grey.shade50,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        prefixIcon: Icon(icon),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Color(0xFF800000), width: 1.8),
         ),
       ),
     );

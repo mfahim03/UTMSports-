@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../model/booking_model.dart';
@@ -22,12 +23,13 @@ class StudentDashboard extends StatefulWidget {
 
 class _StudentDashboardState extends State<StudentDashboard> {
   int _currentBanner = 0;
-  int _currentTab = 0;
-  int _navIndex = 0;
+  int _currentTab    = 0;
+  int _navIndex      = 0;
 
-  static const _maroon = Color(0xFF800000);
+  // ── Design tokens (matches admin/organiser) ───────────────────────────────
+  static const _maroon     = Color(0xFF800000);
+  static const _maroonDark = Color(0xFF5C0000);
 
-  // Banners stay static (events/promotions — can be made dynamic later)
   final List<Map<String, dynamic>> _banners = [
     {
       'title': "UTMCC '24 Run",
@@ -52,10 +54,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
         ChangeNotifierProvider(create: (_) => BookingViewModel()),
         ChangeNotifierProvider(create: (_) => AchievementViewModel()),
       ],
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F8F8),
-        body: SafeArea(
-          child: Builder(builder: (ctx) {
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+        ),
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF8F8F8),
+          body: Builder(builder: (ctx) {
             return IndexedStack(
               index: _navIndex,
               children: [
@@ -67,8 +73,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
               ],
             );
           }),
+          bottomNavigationBar: _buildBottomNav(),
         ),
-        bottomNavigationBar: _buildBottomNav(),
       ),
     );
   }
@@ -92,36 +98,45 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ── Header ────────────────────────────────────────────────────────────────
-
-// ── Header ────────────────────────────────────────────────────────────────
+  // ── Header — consistent with admin/organiser ──────────────────────────────
 
   Widget _buildHeader(user) {
+    final mq   = MediaQuery.of(context);
+    final role = user?.role ?? 'student';
+    final roleLabel = switch (role) {
+      'staff'  => 'Staff',
+      'admin'  => 'Admin',
+      _        => 'Student',
+    };
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF5C0000), Color(0xFF800000)],
+          colors: [_maroonDark, _maroon],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 14, 20, 28),
+      padding: EdgeInsets.fromLTRB(20, mq.padding.top + 14, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              // Avatar ring — tap to edit profile
               GestureDetector(
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const EditProfilePage()),
+                  MaterialPageRoute(
+                      builder: (_) => const EditProfilePage()),
                 ),
                 child: Container(
                   padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.55), width: 2),
+                        color: Colors.white.withOpacity(0.55),
+                        width: 2),
                   ),
                   child: CircleAvatar(
                     radius: 22,
@@ -140,6 +155,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 ),
               ),
               const SizedBox(width: 14),
+
+              // Greeting
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,60 +173,39 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           fontWeight: FontWeight.w800,
                           color: Colors.white,
                           letterSpacing: -0.3),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              // Notification button
-              _headerIconBtn(
+
+              // Notification
+              _HeaderIconBtn(
                 icon: Icons.notifications_outlined,
                 badge: true,
                 onTap: () {},
               ),
               const SizedBox(width: 6),
-              // Logout button
-              _headerIconBtn(
+              // Logout
+              _HeaderIconBtn(
                 icon: Icons.logout_rounded,
                 onTap: () => _signOut(context),
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
+          const SizedBox(height: 20),
 
-  Widget _headerIconBtn({
-    required IconData icon,
-    required VoidCallback onTap,
-    bool badge = false,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            if (badge)
-              Positioned(
-                top: 7,
-                right: 7,
-                child: Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                      color: Color(0xFFFF6B6B), shape: BoxShape.circle),
-                ),
-              ),
-          ],
-        ),
+          // Stat chips — same layout as admin/organiser
+          Row(
+            children: [
+              _HeaderStat(label: 'Role', value: roleLabel),
+              const SizedBox(width: 12),
+              _HeaderStat(
+                  label: 'Email',
+                  value: user?.email?.split('@').last ?? '—'),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -219,7 +215,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
         title: const Text('Sign Out',
             style: TextStyle(fontWeight: FontWeight.w800)),
         content: const Text('Are you sure you want to sign out?'),
@@ -230,8 +227,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF800000)),
+            style:
+                FilledButton.styleFrom(backgroundColor: _maroon),
             child: const Text('Sign Out'),
           ),
         ],
@@ -257,11 +254,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
               onTap: () => setState(() => _navIndex = 3),
               child: Container(
                 height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border:
+                      Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
                   children: [
@@ -308,7 +307,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
         SizedBox(
           height: 180,
           child: PageView.builder(
-            onPageChanged: (i) => setState(() => _currentBanner = i),
+            onPageChanged: (i) =>
+                setState(() => _currentBanner = i),
             itemCount: _banners.length,
             itemBuilder: (_, i) {
               final b = _banners[i];
@@ -318,8 +318,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     MaterialPageRoute(
                         builder: (_) => const ViewEventsPage())),
                 child: Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 20),
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 20),
                   decoration: BoxDecoration(
                     color: b['color'] as Color,
                     borderRadius: BorderRadius.circular(16),
@@ -333,7 +333,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         child: Center(
                           child: Icon(b['icon'] as IconData,
                               size: 80,
-                              color: Colors.white.withOpacity(0.12)),
+                              color: Colors.white
+                                  .withOpacity(0.12)),
                         ),
                       ),
                       Padding(
@@ -341,7 +342,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         child: Column(
                           crossAxisAlignment:
                               CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisAlignment:
+                              MainAxisAlignment.end,
                           children: [
                             Text(b['subtitle'] as String,
                                 style: TextStyle(
@@ -353,7 +355,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                 style: const TextStyle(
                                     color: Colors.white,
                                     fontSize: 20,
-                                    fontWeight: FontWeight.w800)),
+                                    fontWeight:
+                                        FontWeight.w800)),
                           ],
                         ),
                       ),
@@ -371,7 +374,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             _banners.length,
             (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              margin: const EdgeInsets.symmetric(horizontal: 3),
+              margin:
+                  const EdgeInsets.symmetric(horizontal: 3),
               width: _currentBanner == i ? 18 : 7,
               height: 7,
               decoration: BoxDecoration(
@@ -399,7 +403,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
             children: [
               const Text('Reservation Record',
                   style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w800)),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800)),
               const Spacer(),
               GestureDetector(
                 onTap: () {
@@ -409,7 +414,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ViewAchievementsPage()),
+                          builder: (_) =>
+                              const ViewAchievementsPage()),
                     );
                   }
                 },
@@ -430,18 +436,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
             ],
           ),
           const SizedBox(height: 14),
-
-          // Live data section
           if (_currentTab == 0)
             _LiveBookings(
-              onSeeAll: () => setState(() => _navIndex = 3),
-            )
+                onSeeAll: () => setState(() => _navIndex = 3))
           else
             _LiveAchievements(
               onSeeAll: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => const ViewAchievementsPage()),
+                    builder: (_) =>
+                        const ViewAchievementsPage()),
               ),
             ),
         ],
@@ -455,8 +459,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
       onTap: () => setState(() => _currentTab = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+            horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: selected
               ? _maroon.withOpacity(0.12)
@@ -472,8 +476,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight:
-                selected ? FontWeight.w700 : FontWeight.w400,
+            fontWeight: selected
+                ? FontWeight.w700
+                : FontWeight.w400,
             color: selected ? _maroon : Colors.grey.shade500,
           ),
         ),
@@ -484,7 +489,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
   // ── Bottom nav ────────────────────────────────────────────────────────────
 
   Widget _buildBottomNav() {
-    final items = [
+    const items = [
       Icons.home_rounded,
       Icons.event_outlined,
       Icons.add_circle_outline_rounded,
@@ -495,7 +500,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        border:
+            Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: SafeArea(
         top: false,
@@ -516,11 +522,10 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    items[i],
-                    color: selected ? _maroon : Colors.black54,
-                    size: 26,
-                  ),
+                  child: Icon(items[i],
+                      color:
+                          selected ? _maroon : Colors.black54,
+                      size: 26),
                 ),
               );
             }),
@@ -531,55 +536,132 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 }
 
-// ── Live bookings widget (home tab preview) ───────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  SHARED HEADER WIDGETS  (identical to admin/organiser)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _HeaderIconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool badge;
+
+  const _HeaderIconBtn(
+      {required this.icon, required this.onTap, this.badge = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            if (badge)
+              Positioned(
+                top: 7,
+                right: 7,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                      color: Color(0xFFFF6B6B),
+                      shape: BoxShape.circle),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _HeaderStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: Colors.white70,
+                  letterSpacing: 0.3)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  LIVE BOOKINGS
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _LiveBookings extends StatelessWidget {
   final VoidCallback onSeeAll;
   const _LiveBookings({required this.onSeeAll});
 
   static const _maroon = Color(0xFF800000);
-
   static const _sportIcons = <String, IconData>{
-    'Badminton': Icons.sports_tennis,
+    'Badminton':    Icons.sports_tennis,
     'Table Tennis': Icons.sports_tennis,
-    'Volleyball': Icons.sports_volleyball,
-    'Squash': Icons.sports_handball,
+    'Volleyball':   Icons.sports_volleyball,
+    'Squash':       Icons.sports_handball,
   };
-
   static const _sportColors = <String, Color>{
-    'Badminton': Color(0xFF800000),
+    'Badminton':    Color(0xFF800000),
     'Table Tennis': Color(0xFF7C3AED),
-    'Volleyball': Color(0xFF0369A1),
-    'Squash': Color(0xFF065F46),
+    'Volleyball':   Color(0xFF0369A1),
+    'Squash':       Color(0xFF065F46),
   };
 
-  String _formatDate(String dateStr) {
+  String _fmt(String d) {
     try {
-      final parts = dateStr.split('-');
-      if (parts.length != 3) return dateStr;
+      final p = d.split('-');
       final dt = DateTime(
-          int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-      const months = [
-        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-      ];
-      return '${dt.day} ${months[dt.month]} ${dt.year}';
+          int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+      const m = ['','Jan','Feb','Mar','Apr','May','Jun',
+                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+      return '${dt.day} ${m[dt.month]} ${dt.year}';
     } catch (_) {
-      return dateStr;
+      return d;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final vm = context.read<BookingViewModel>();
+    final vm  = context.read<BookingViewModel>();
     final now = DateTime.now();
-    final todayStr =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2,'0')}-${now.day.toString().padLeft(2,'0')}';
 
     return StreamBuilder<List<BookingModel>>(
       stream: vm.watchUserBookings(uid),
-      builder: (ctx, snap) {
+      builder: (_, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
@@ -588,12 +670,9 @@ class _LiveBookings extends StatelessWidget {
                     color: _maroon, strokeWidth: 2)),
           );
         }
-
-        final all = snap.data ?? [];
-        // Show only upcoming confirmed, max 3 on home
-        final upcoming = all
+        final upcoming = (snap.data ?? [])
             .where((b) =>
-                b.date.compareTo(todayStr) >= 0 &&
+                b.date.compareTo(today) >= 0 &&
                 b.status == 'confirmed')
             .take(3)
             .toList();
@@ -603,22 +682,19 @@ class _LiveBookings extends StatelessWidget {
             icon: Icons.calendar_today_outlined,
             message: 'No upcoming bookings',
             actionLabel: 'Book a facility',
-            onAction: () {
-              // Navigate to book tab
-              final state = context
-                  .findAncestorStateOfType<_StudentDashboardState>();
-              state?.setState(() => state._navIndex = 2);
-            },
+            onAction: () => context
+                .findAncestorStateOfType<_StudentDashboardState>()
+                ?.setState(() => context
+                    .findAncestorStateOfType<
+                        _StudentDashboardState>()!
+                    ._navIndex = 2),
           );
         }
 
         return Column(
           children: upcoming.map((b) {
-            final color =
-                _sportColors[b.sport] ?? _maroon;
-            final icon =
-                _sportIcons[b.sport] ?? Icons.sports;
-
+            final color = _sportColors[b.sport] ?? _maroon;
+            final icon  = _sportIcons[b.sport] ?? Icons.sports;
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
@@ -634,49 +710,41 @@ class _LiveBookings extends StatelessWidget {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
+                        color: color.withOpacity(0.12),
+                        shape: BoxShape.circle),
                     child: Icon(icon, color: color, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${b.sport} — Court ${b.court}',
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        Text('${b.sport} — Court ${b.court}',
+                            style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 3),
-                        Text(
-                          '${_formatDate(b.date)}  ·  ${b.timeSlot}',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600),
-                        ),
+                        Text('${_fmt(b.date)}  ·  ${b.timeSlot}',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600)),
                         const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: _maroon.withOpacity(0.1),
-                                borderRadius:
-                                    BorderRadius.circular(20),
-                              ),
-                              child: const Text('Upcoming',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: _maroon,
-                                      fontWeight: FontWeight.w700)),
-                            ),
-                          ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _maroon.withOpacity(0.1),
+                            borderRadius:
+                                BorderRadius.circular(20),
+                          ),
+                          child: const Text('Upcoming',
+                              style: TextStyle(
+                                  fontSize: 10,
+                                  color: _maroon,
+                                  fontWeight: FontWeight.w700)),
                         ),
                       ],
                     ),
@@ -691,31 +759,32 @@ class _LiveBookings extends StatelessWidget {
   }
 }
 
-// ── Live achievements widget (home tab preview) ───────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  LIVE ACHIEVEMENTS
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _LiveAchievements extends StatelessWidget {
   final VoidCallback onSeeAll;
   const _LiveAchievements({required this.onSeeAll});
 
   static const _maroon = Color(0xFF800000);
-
   static const _sportIcons = <String, IconData>{
-    'Badminton': Icons.sports_tennis,
-    'Running': Icons.directions_run,
-    'Volleyball': Icons.sports_volleyball,
-    'Squash': Icons.sports_handball,
+    'Badminton':    Icons.sports_tennis,
+    'Running':      Icons.directions_run,
+    'Volleyball':   Icons.sports_volleyball,
+    'Squash':       Icons.sports_handball,
     'Table Tennis': Icons.sports_tennis,
   };
 
-  Color _awardColor(String award) {
-    final a = award.toLowerCase();
-    if (a.contains('gold') || a.contains('champion') || a.contains('1st')) {
+  Color _awardColor(String a) {
+    final s = a.toLowerCase();
+    if (s.contains('gold') || s.contains('champion') || s.contains('1st')) {
       return const Color(0xFFB8860B);
     }
-    if (a.contains('silver') || a.contains('2nd')) {
+    if (s.contains('silver') || s.contains('2nd')) {
       return const Color(0xFF607D8B);
     }
-    if (a.contains('bronze') || a.contains('3rd')) {
+    if (s.contains('bronze') || s.contains('3rd')) {
       return const Color(0xFF8B5E3C);
     }
     return _maroon;
@@ -724,10 +793,9 @@ class _LiveAchievements extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = context.read<AchievementViewModel>();
-
     return StreamBuilder<List<AchievementModel>>(
       stream: vm.stream,
-      builder: (ctx, snap) {
+      builder: (_, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 24),
@@ -736,22 +804,18 @@ class _LiveAchievements extends StatelessWidget {
                     color: _maroon, strokeWidth: 2)),
           );
         }
-
         final all = (snap.data ?? []).take(2).toList();
-
         if (all.isEmpty) {
           return const _EmptyCard(
             icon: Icons.emoji_events_outlined,
             message: 'No achievements yet',
           );
         }
-
         return Column(
           children: all.map((a) {
             final icon =
                 _sportIcons[a.category] ?? Icons.emoji_events;
-            final awardColor = _awardColor(a.award);
-
+            final color = _awardColor(a.award);
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(14),
@@ -759,7 +823,7 @@ class _LiveAchievements extends StatelessWidget {
                 color: const Color(0xFFFCEEEE),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: awardColor.withOpacity(0.15)),
+                    color: color.withOpacity(0.15)),
               ),
               child: Row(
                 children: [
@@ -767,16 +831,15 @@ class _LiveAchievements extends StatelessWidget {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: awardColor.withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child:
-                        Icon(icon, color: awardColor, size: 22),
+                        color: color.withOpacity(0.12),
+                        shape: BoxShape.circle),
+                    child: Icon(icon, color: color, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         Text(a.title,
                             style: const TextStyle(
@@ -785,22 +848,20 @@ class _LiveAchievements extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 3),
-                        Text(
-                          '${a.studentName}  ·  ${a.date}',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600),
-                        ),
+                        Text('${a.studentName}  ·  ${a.date}',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600)),
                         const SizedBox(height: 4),
                         Row(
                           children: [
                             Icon(Icons.emoji_events,
-                                color: awardColor, size: 12),
+                                color: color, size: 12),
                             const SizedBox(width: 4),
                             Text(a.award,
                                 style: TextStyle(
                                     fontSize: 11,
-                                    color: awardColor,
+                                    color: color,
                                     fontWeight: FontWeight.w700)),
                           ],
                         ),
@@ -817,7 +878,9 @@ class _LiveAchievements extends StatelessWidget {
   }
 }
 
-// ── Empty state card ──────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+//  EMPTY CARD
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _EmptyCard extends StatelessWidget {
   final IconData icon;
@@ -838,7 +901,8 @@ class _EmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+      padding: const EdgeInsets.symmetric(
+          vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14),

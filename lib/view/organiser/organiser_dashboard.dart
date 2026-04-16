@@ -193,10 +193,6 @@ class _OrganiserDashboardContent extends StatelessWidget {
                             _HeaderStat(
                                 label: 'My Events',
                                 value: '$count'),
-                            const SizedBox(width: 12),
-                            _HeaderStat(
-                                label: 'System',
-                                value: 'UTMSports+'),
                           ],
                         );
                       },

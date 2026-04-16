@@ -16,12 +16,16 @@ class AuthRepository {
   }) async {
     final cred = await _auth.createUserWithEmailAndPassword(
         email: email, password: password);
+    
+    final role = email.toLowerCase().endsWith('@graduate.utm.my')
+        ? 'student'
+        : 'staff';
 
     final user = UserModel(
       uid: cred.user!.uid,
       email: email,
       name: name,
-      role: 'student',
+      role: role,
       phone: phone,
       matric: matric,
     );
@@ -38,6 +42,11 @@ class AuthRepository {
     final doc = await _db.collection('users').doc(cred.user!.uid).get();
     if (!doc.exists) throw Exception('User record not found.');
     return UserModel.fromMap(doc.id, doc.data()!);
+  }
+
+  // ── Forgot Password ──────────────────────────────────────────────
+  Future<void> sendPasswordReset(String email) async {
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   // ── Fetch single user ─────────────────────────────────────────────────────

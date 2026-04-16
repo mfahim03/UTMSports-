@@ -57,6 +57,16 @@ class AuthViewModel extends ChangeNotifier {
     _set(AuthStatus.idle);
   }
 
+  Future<void> sendPasswordReset(String email) async {
+  _set(AuthStatus.loading);
+  try {
+    await _repo.sendPasswordReset(email);
+    _set(AuthStatus.success);
+  } catch (e) {
+    _setError(_friendlyError(e));
+  }
+}
+
   // ── Update profile ────────────────────────────────────────────────────────
   Future<void> updateProfile({
     required String name,

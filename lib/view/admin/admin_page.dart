@@ -176,10 +176,6 @@ class _AdminPageContent extends StatelessWidget {
                         const SizedBox(width: 12),
                         _HeaderStat(
                             label: 'Status', value: 'Active'),
-                        const SizedBox(width: 12),
-                        _HeaderStat(
-                            label: 'System',
-                            value: 'UTMSports+'),
                       ],
                     ),
                   ],

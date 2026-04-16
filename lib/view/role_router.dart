@@ -21,9 +21,9 @@ class RoleRouter extends StatelessWidget {
     }
 
     return switch (user.role) {
-      'admin' => const AdminPage(),
+      'admin'     => const AdminPage(),
       'organiser' => const OrganiserDashboard(),
-      _ => const StudentDashboard(),
+       _          => const StudentDashboard(),
     };
   }
 }
