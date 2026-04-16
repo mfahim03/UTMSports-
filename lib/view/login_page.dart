@@ -40,7 +40,7 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
-  // ── Forgot Password Dialog ─────────────────────────────
+  // Forgot Password Dialog 
   void _showForgotPasswordDialog(BuildContext context) {
     final emailCtrl = TextEditingController();
 
@@ -93,7 +93,7 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  // ── Login ─────────────────────────────────────────────
+  // Login 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -160,7 +160,7 @@ class _LoginPageState extends State<LoginPage>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Left runner (behind)
+                        // Left runner
                         Transform.translate(
                           offset: const Offset(20, 8),
                           child: const Icon(
@@ -169,13 +169,13 @@ class _LoginPageState extends State<LoginPage>
                             color: Color.fromARGB(255, 255, 255, 255),
                           ),
                         ),
-                        // Middle runner (front, largest)
+                        // Middle runner
                         const Icon(
                           Icons.directions_run,
                           size: 56,
                           color: Color(0xFF800000),
                         ),
-                        // Right runner (behind)
+                        // Right runner 
                         Transform.translate(
                           offset: const Offset(-25, 8),
                           child: const Icon(
@@ -222,7 +222,7 @@ class _LoginPageState extends State<LoginPage>
 
                       const SizedBox(height: 40),
 
-                      // ── Card ─────────────────────────────
+                      // Card 
                       Container(
                         padding: const EdgeInsets.all(28),
                         decoration: BoxDecoration(
@@ -330,7 +330,7 @@ class _LoginPageState extends State<LoginPage>
   }
 }
 
-// ── Input Field ─────────────────────────────
+// Input Field 
 class _InputField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
