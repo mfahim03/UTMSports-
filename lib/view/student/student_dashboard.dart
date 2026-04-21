@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../model/event_model.dart';
 import '../../model/booking_model.dart';
 import '../../model/achievement_model.dart';
 import '../../viewmodel/auth_viewmodel.dart';
 import '../../viewmodel/booking_viewmodel.dart';
 import '../../viewmodel/achievement_viewmodel.dart';
+import '../../viewmodel/event_viewmodel.dart';
 import 'editProfile.dart';
 import 'viewEvent.dart';
 import 'bookCourt.dart';
@@ -22,28 +25,12 @@ class StudentDashboard extends StatefulWidget {
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
-  int _currentBanner = 0;
-  int _currentTab    = 0;
-  int _navIndex      = 0;
+  int _currentTab = 0;
+  int _navIndex   = 0;
 
-  // ── Design tokens (matches admin/organiser) ───────────────────────────────
+  // Design tokens (matches admin/organiser) 
   static const _maroon     = Color(0xFF800000);
   static const _maroonDark = Color(0xFF5C0000);
-
-  final List<Map<String, dynamic>> _banners = [
-    {
-      'title': "UTMCC '24 Run",
-      'subtitle': '5KM Finisher',
-      'color': Color(0xFF2D0A2D),
-      'icon': Icons.directions_run,
-    },
-    {
-      'title': 'Badminton Open',
-      'subtitle': 'Register Now',
-      'color': Color(0xFF0A1A2D),
-      'icon': Icons.sports_tennis,
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +40,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       providers: [
         ChangeNotifierProvider(create: (_) => BookingViewModel()),
         ChangeNotifierProvider(create: (_) => AchievementViewModel()),
+        ChangeNotifierProvider(create: (_) => EventViewModel()),
       ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
@@ -79,8 +67,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ── Home tab ──────────────────────────────────────────────────────────────
-
+  // Home tab 
   Widget _buildHome(BuildContext context, user) {
     return SingleChildScrollView(
       child: Column(
@@ -89,7 +76,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           _buildHeader(user),
           _buildSearchBar(),
           const SizedBox(height: 16),
-          _buildBannerCarousel(),
+          const _LiveBannerCarousel(),
           const SizedBox(height: 20),
           _buildReservationSection(context),
           const SizedBox(height: 24),
@@ -98,15 +85,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ── Header — consistent with admin/organiser ──────────────────────────────
-
+  // Header — consistent with admin/organiser 
   Widget _buildHeader(user) {
     final mq   = MediaQuery.of(context);
     final role = user?.role ?? 'student';
     final roleLabel = switch (role) {
-      'staff'  => 'Staff',
-      'admin'  => 'Admin',
-      _        => 'Student',
+      'staff' => 'Staff',
+      'admin' => 'Admin',
+      _       => 'Student',
     };
 
     return Container(
@@ -135,8 +121,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.55),
-                        width: 2),
+                        color: Colors.white.withOpacity(0.55), width: 2),
                   ),
                   child: CircleAvatar(
                     radius: 22,
@@ -203,6 +188,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
               _HeaderStat(
                   label: 'Email',
                   value: user?.email?.split('@').last ?? '—'),
+              const SizedBox(width: 12),
+              _HeaderStat(label: 'System', value: 'UTMSports+'),
             ],
           ),
         ],
@@ -215,8 +202,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Sign Out',
             style: TextStyle(fontWeight: FontWeight.w800)),
         content: const Text('Are you sure you want to sign out?'),
@@ -227,8 +214,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style:
-                FilledButton.styleFrom(backgroundColor: _maroon),
+            style: FilledButton.styleFrom(backgroundColor: _maroon),
             child: const Text('Sign Out'),
           ),
         ],
@@ -242,8 +228,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     }
   }
 
-  // ── Search bar ────────────────────────────────────────────────────────────
-
+  // Search bar 
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
@@ -254,13 +239,11 @@ class _StudentDashboardState extends State<StudentDashboard> {
               onTap: () => setState(() => _navIndex = 3),
               child: Container(
                 height: 44,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
-                  border:
-                      Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
                   children: [
@@ -269,8 +252,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     const SizedBox(width: 8),
                     Text('Type here to search booking...',
                         style: TextStyle(
-                            color: Colors.grey.shade400,
-                            fontSize: 13)),
+                            color: Colors.grey.shade400, fontSize: 13)),
                   ],
                 ),
               ),
@@ -278,10 +260,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           ),
           const SizedBox(width: 10),
           GestureDetector(
-            onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => const ViewEventsPage())),
+            onTap: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ViewEventsPage())),
             child: Container(
               width: 44,
               height: 44,
@@ -299,100 +279,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ── Banner carousel ───────────────────────────────────────────────────────
-
-  Widget _buildBannerCarousel() {
-    return Column(
-      children: [
-        SizedBox(
-          height: 180,
-          child: PageView.builder(
-            onPageChanged: (i) =>
-                setState(() => _currentBanner = i),
-            itemCount: _banners.length,
-            itemBuilder: (_, i) {
-              final b = _banners[i];
-              return GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const ViewEventsPage())),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: b['color'] as Color,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        right: 20,
-                        top: 0,
-                        bottom: 0,
-                        child: Center(
-                          child: Icon(b['icon'] as IconData,
-                              size: 80,
-                              color: Colors.white
-                                  .withOpacity(0.12)),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                          mainAxisAlignment:
-                              MainAxisAlignment.end,
-                          children: [
-                            Text(b['subtitle'] as String,
-                                style: TextStyle(
-                                    color: Colors.white
-                                        .withOpacity(0.7),
-                                    fontSize: 12)),
-                            const SizedBox(height: 4),
-                            Text(b['title'] as String,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight:
-                                        FontWeight.w800)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            _banners.length,
-            (i) => AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              margin:
-                  const EdgeInsets.symmetric(horizontal: 3),
-              width: _currentBanner == i ? 18 : 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: _currentBanner == i
-                    ? _maroon
-                    : Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Reservation / Achievement section ─────────────────────────────────────
-
+  // Reservation / Achievement section 
   Widget _buildReservationSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -403,8 +290,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
             children: [
               const Text('Reservation Record',
                   style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800)),
+                      fontSize: 18, fontWeight: FontWeight.w800)),
               const Spacer(),
               GestureDetector(
                 onTap: () {
@@ -414,8 +300,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) =>
-                              const ViewAchievementsPage()),
+                          builder: (_) => const ViewAchievementsPage()),
                     );
                   }
                 },
@@ -444,8 +329,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               onSeeAll: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) =>
-                        const ViewAchievementsPage()),
+                    builder: (_) => const ViewAchievementsPage()),
               ),
             ),
         ],
@@ -459,8 +343,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
       onTap: () => setState(() => _currentTab = index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-            horizontal: 18, vertical: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: selected
               ? _maroon.withOpacity(0.12)
@@ -476,9 +360,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: selected
-                ? FontWeight.w700
-                : FontWeight.w400,
+            fontWeight:
+                selected ? FontWeight.w700 : FontWeight.w400,
             color: selected ? _maroon : Colors.grey.shade500,
           ),
         ),
@@ -486,8 +369,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
-  // ── Bottom nav ────────────────────────────────────────────────────────────
-
+  // Bottom nav 
   Widget _buildBottomNav() {
     const items = [
       Icons.home_rounded,
@@ -500,8 +382,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border:
-            Border(top: BorderSide(color: Colors.grey.shade200)),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: SafeArea(
         top: false,
@@ -523,8 +404,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(items[i],
-                      color:
-                          selected ? _maroon : Colors.black54,
+                      color: selected ? _maroon : Colors.black54,
                       size: 26),
                 ),
               );
@@ -536,10 +416,340 @@ class _StudentDashboardState extends State<StudentDashboard> {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  SHARED HEADER WIDGETS  (identical to admin/organiser)
-// ─────────────────────────────────────────────────────────────────────────────
+//  LIVE BANNER CAROUSEL 
+class _LiveBannerCarousel extends StatefulWidget {
+  const _LiveBannerCarousel();
 
+  @override
+  State<_LiveBannerCarousel> createState() => _LiveBannerCarouselState();
+}
+
+class _LiveBannerCarouselState extends State<_LiveBannerCarousel> {
+  static const _maroon = Color(0xFF800000);
+
+  static const _categoryColors = <String, Color>{
+    'Futsal':          Color(0xFF0A2540),
+    'Volleyball':      Color(0xFF1A0A3A),
+    'Badminton':       Color(0xFF003D2B),
+    'PUBG':            Color(0xFF1A0A00),
+    'Mobile Legends':  Color(0xFF2E0A00),
+    'Running':         Color(0xFF2D0A2D),
+    'Squash':          Color(0xFF002D1A),
+    'Table Tennis':    Color(0xFF0A0A2D),
+    'Other':           Color(0xFF1A1A2E),
+  };
+
+  static const _categoryIcons = <String, IconData>{
+    'Futsal':          Icons.sports_soccer,
+    'Volleyball':      Icons.sports_volleyball,
+    'Badminton':       Icons.sports_tennis,
+    'PUBG':            Icons.videogame_asset_rounded,
+    'Mobile Legends':  Icons.smartphone_rounded,
+    'Running':         Icons.directions_run,
+    'Squash':          Icons.sports_handball,
+    'Table Tennis':    Icons.sports_tennis,
+    'Other':           Icons.emoji_events,
+  };
+
+  static const _categoryAccents = <String, Color>{
+    'Futsal':          Color(0xFF0369A1),
+    'Volleyball':      Color(0xFF7C3AED),
+    'Badminton':       Color(0xFF065F46),
+    'PUBG':            Color(0xFF92400E),
+    'Mobile Legends':  Color(0xFF9A3412),
+    'Running':         Color(0xFF800000),
+    'Squash':          Color(0xFF065F46),
+    'Table Tennis':    Color(0xFF5B21B6),
+    'Other':           Color(0xFF374151),
+  };
+
+  late final PageController _pageCtrl;
+  StreamSubscription<List<EventModel>>? _sub;
+  List<EventModel> _events = [];
+  bool _loading = true;
+  int _current = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageCtrl = PageController();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe once — never resubscribe on rebuild.
+    if (_sub != null) return;
+    final vm = context.read<EventViewModel>();
+    _sub = vm.allStream.listen((events) {
+      if (!mounted) return;
+      setState(() {
+        _events = events;
+        _loading = false;
+        // Clamp current page index in case events shrink
+        if (_current >= events.length && events.isNotEmpty) {
+          _current = events.length - 1;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return _buildSkeleton();
+    if (_events.isEmpty) return _buildEmptyBanner();
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 180,
+          child: PageView.builder(
+            controller: _pageCtrl,
+            onPageChanged: (i) => setState(() => _current = i),
+            itemCount: _events.length,
+            itemBuilder: (_, i) => _BannerCard(
+              event: _events[i],
+              bgColor: _categoryColors[_events[i].category] ??
+                  const Color(0xFF1A1A2E),
+              accentColor: _categoryAccents[_events[i].category] ??
+                  _maroon,
+              icon: _categoryIcons[_events[i].category] ??
+                  Icons.emoji_events,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Dot indicators
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(_events.length, (i) {
+            final active = _current == i;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: active ? 18 : 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: active ? _maroon : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkeleton() {
+    return Column(
+      children: [
+        Container(
+          height: 180,
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+              3,
+              (i) => Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == 0 ? 18 : 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  )),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyBanner() {
+    return Container(
+      height: 180,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A2E),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event_outlined, color: Colors.white38, size: 36),
+            SizedBox(height: 8),
+            Text('No events available',
+                style: TextStyle(color: Colors.white54, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//  SINGLE BANNER CARD
+class _BannerCard extends StatelessWidget {
+  final EventModel event;
+  final Color bgColor;
+  final Color accentColor;
+  final IconData icon;
+
+  const _BannerCard({
+    required this.event,
+    required this.bgColor,
+    required this.accentColor,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ViewEventsPage()),
+      ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [bgColor, Color.lerp(bgColor, accentColor, 0.45)!],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Stack(
+          children: [
+            // Faded background sport icon
+            Positioned(
+              right: 16,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Icon(icon,
+                    size: 100,
+                    color: Colors.white.withOpacity(0.08)),
+              ),
+            ),
+            // Subtle bottom gradient scrim
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.35),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Category pill
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 9, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                          color: Colors.white.withOpacity(0.25)),
+                    ),
+                    child: Text(
+                      event.category.toUpperCase(),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  // Title
+                  Text(
+                    event.title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  // Date & location row
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 11, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Text(event.date,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 11)),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.location_on_outlined,
+                          size: 11, color: Colors.white70),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(event.location,
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 11),
+                            overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // "Register" tag — if registration is open
+            if (event.registrationOpen)
+              Positioned(
+                top: 14,
+                right: 14,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade600,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text('Open',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+//  SHARED HEADER WIDGETS
 class _HeaderIconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -590,8 +800,7 @@ class _HeaderStat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
@@ -616,10 +825,7 @@ class _HeaderStat extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  LIVE BOOKINGS
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _LiveBookings extends StatelessWidget {
   final VoidCallback onSeeAll;
   const _LiveBookings({required this.onSeeAll});
@@ -640,11 +846,13 @@ class _LiveBookings extends StatelessWidget {
 
   String _fmt(String d) {
     try {
-      final p = d.split('-');
+      final p  = d.split('-');
       final dt = DateTime(
           int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
-      const m = ['','Jan','Feb','Mar','Apr','May','Jun',
-                  'Jul','Aug','Sep','Oct','Nov','Dec'];
+      const m = [
+        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      ];
       return '${dt.day} ${m[dt.month]} ${dt.year}';
     } catch (_) {
       return d;
@@ -657,7 +865,7 @@ class _LiveBookings extends StatelessWidget {
     final vm  = context.read<BookingViewModel>();
     final now = DateTime.now();
     final today =
-        '${now.year}-${now.month.toString().padLeft(2,'0')}-${now.day.toString().padLeft(2,'0')}';
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
     return StreamBuilder<List<BookingModel>>(
       stream: vm.watchUserBookings(uid),
@@ -685,8 +893,7 @@ class _LiveBookings extends StatelessWidget {
             onAction: () => context
                 .findAncestorStateOfType<_StudentDashboardState>()
                 ?.setState(() => context
-                    .findAncestorStateOfType<
-                        _StudentDashboardState>()!
+                    .findAncestorStateOfType<_StudentDashboardState>()!
                     ._navIndex = 2),
           );
         }
@@ -701,8 +908,7 @@ class _LiveBookings extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFFCEEEE),
                 borderRadius: BorderRadius.circular(14),
-                border:
-                    Border.all(color: color.withOpacity(0.15)),
+                border: Border.all(color: color.withOpacity(0.15)),
               ),
               child: Row(
                 children: [
@@ -717,8 +923,7 @@ class _LiveBookings extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('${b.sport} — Court ${b.court}',
                             style: const TextStyle(
@@ -737,8 +942,7 @@ class _LiveBookings extends StatelessWidget {
                               horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: _maroon.withOpacity(0.1),
-                            borderRadius:
-                                BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Text('Upcoming',
                               style: TextStyle(
@@ -759,10 +963,7 @@ class _LiveBookings extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  LIVE ACHIEVEMENTS
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _LiveAchievements extends StatelessWidget {
   final VoidCallback onSeeAll;
   const _LiveAchievements({required this.onSeeAll});
@@ -813,8 +1014,7 @@ class _LiveAchievements extends StatelessWidget {
         }
         return Column(
           children: all.map((a) {
-            final icon =
-                _sportIcons[a.category] ?? Icons.emoji_events;
+            final icon  = _sportIcons[a.category] ?? Icons.emoji_events;
             final color = _awardColor(a.award);
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
@@ -822,8 +1022,7 @@ class _LiveAchievements extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFFCEEEE),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                    color: color.withOpacity(0.15)),
+                border: Border.all(color: color.withOpacity(0.15)),
               ),
               child: Row(
                 children: [
@@ -838,8 +1037,7 @@ class _LiveAchievements extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(a.title,
                             style: const TextStyle(
@@ -878,10 +1076,7 @@ class _LiveAchievements extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  EMPTY CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _EmptyCard extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -901,8 +1096,8 @@ class _EmptyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-          vertical: 28, horizontal: 20),
+      padding:
+          const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14),

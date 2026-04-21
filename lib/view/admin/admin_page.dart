@@ -6,9 +6,7 @@ import 'manage_account.dart';
 import 'manage_achievement.dart';
 import 'view_feedback.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  DESIGN TOKENS
-// ─────────────────────────────────────────────────────────────────────────────
 class _T {
   static const maroon      = Color(0xFF800000);
   static const maroonDark  = Color(0xFF5C0000);
@@ -26,9 +24,7 @@ class _T {
   ];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT
-// ─────────────────────────────────────────────────────────────────────────────
 class AdminPage extends StatelessWidget {
   const AdminPage({super.key});
 
@@ -36,9 +32,7 @@ class AdminPage extends StatelessWidget {
   Widget build(BuildContext context) => const _AdminPageContent();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  STATE
-// ─────────────────────────────────────────────────────────────────────────────
 class _AdminPageContent extends StatelessWidget {
   const _AdminPageContent();
 
@@ -102,7 +96,7 @@ class _AdminPageContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ─────────────────────────────────────────────────
+              // Header 
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -182,7 +176,7 @@ class _AdminPageContent extends StatelessWidget {
                 ),
               ),
 
-              // ── Section: Manage ─────────────────────────────────────────
+              // Section: Manage 
               _SectionTitle(label: 'Management'),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -229,7 +223,7 @@ class _AdminPageContent extends StatelessWidget {
                 ),
               ),
 
-              // ── Section: Quick links ────────────────────────────────────
+              // Section: Quick links 
               _SectionTitle(label: 'Quick Links'),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -270,9 +264,7 @@ class _AdminPageContent extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  HEADER STAT CHIP
-// ─────────────────────────────────────────────────────────────────────────────
 class _HeaderStat extends StatelessWidget {
   final String label;
   final String value;
@@ -306,9 +298,7 @@ class _HeaderStat extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  HEADER ICON BUTTON
-// ─────────────────────────────────────────────────────────────────────────────
 class _HeaderIconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -354,9 +344,7 @@ class _HeaderIconBtn extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  SECTION TITLE
-// ─────────────────────────────────────────────────────────────────────────────
 class _SectionTitle extends StatelessWidget {
   final String label;
   const _SectionTitle({required this.label});
@@ -375,9 +363,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ACTION CARD  (press animation)
-// ─────────────────────────────────────────────────────────────────────────────
 class _ActionCard extends StatefulWidget {
   final IconData icon;
   final String label;
@@ -510,9 +496,7 @@ class _ActionCardState extends State<_ActionCard>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  QUICK LINK ROW
-// ─────────────────────────────────────────────────────────────────────────────
 class _QuickLink extends StatelessWidget {
   final IconData icon;
   final String label;

@@ -13,14 +13,14 @@ class EventViewModel extends ChangeNotifier {
 
   static List<String> get categories => EventRepository.categories;
 
-  // ── All events stream (for students) ──────────────────────────────────────
+  // All events stream (for students) 
   Stream<List<EventModel>> get allStream => _repo.watchAll();
 
-  // ── Organiser's own events ─────────────────────────────────────────────────
+  // Organiser's own events 
   Stream<List<EventModel>> organiserStream(String uid) =>
       _repo.watchByOrganiser(uid);
 
-  // ── Add ───────────────────────────────────────────────────────────────────
+  // Add 
   Future<bool> add(EventModel e) async {
     _busy = true;
     _error = null;
@@ -37,7 +37,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Update ────────────────────────────────────────────────────────────────
+  // Update 
   Future<bool> update(EventModel e) async {
     _busy = true;
     _error = null;
@@ -54,7 +54,7 @@ class EventViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // Delete 
   Future<bool> delete(String id) async {
     _busy = true;
     _error = null;

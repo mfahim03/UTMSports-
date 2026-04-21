@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import '../../model/achievement_model.dart';
 import '../../viewmodel/achievement_viewmodel.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS  (mirrors admin_page.dart & view_feedback.dart)
-// ─────────────────────────────────────────────────────────────────────────────
+//  DESIGN TOKENS
 class _T {
   static const maroon      = Color(0xFF800000);
   static const maroonDark  = Color(0xFF5C0000);
@@ -38,9 +36,7 @@ class _T {
   static Color awardBg(String award) => awardColor(award).withOpacity(0.09);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT
-// ─────────────────────────────────────────────────────────────────────────────
 class ManageAchievementsPage extends StatelessWidget {
   const ManageAchievementsPage({super.key});
 
@@ -53,9 +49,7 @@ class ManageAchievementsPage extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  CONTENT
-// ─────────────────────────────────────────────────────────────────────────────
 class _ManageAchievementsContent extends StatelessWidget {
   const _ManageAchievementsContent();
 
@@ -73,13 +67,13 @@ class _ManageAchievementsContent extends StatelessWidget {
         backgroundColor: _T.bg,
         body: Column(
           children: [
-            // ── Gradient header ────────────────────────────────────────────
+            // Gradient header 
             _buildHeader(context, vm, mq),
 
-            // ── Summary strip ──────────────────────────────────────────────
+            // Summary strip 
             _SummaryStrip(stream: vm.stream),
 
-            // ── Achievement list ───────────────────────────────────────────
+            // Achievement list 
             Expanded(
               child: StreamBuilder<List<AchievementModel>>(
                 stream: vm.stream,
@@ -114,7 +108,7 @@ class _ManageAchievementsContent extends StatelessWidget {
           ],
         ),
 
-        // ── FAB ───────────────────────────────────────────────────────────
+        // FAB 
         floatingActionButton: FloatingActionButton.extended(
           backgroundColor: _T.maroon,
           foregroundColor: Colors.white,
@@ -128,7 +122,7 @@ class _ManageAchievementsContent extends StatelessWidget {
     );
   }
 
-  // ── HEADER ──────────────────────────────────────────────────────────────────
+  // HEADER 
   Widget _buildHeader(
       BuildContext context, AchievementViewModel vm, MediaQueryData mq) {
     return Container(
@@ -176,7 +170,7 @@ class _ManageAchievementsContent extends StatelessWidget {
             ),
           ),
 
-          // ── Category filter chips ──────────────────────────────────────
+          // Category filter chips 
           SizedBox(
             height: 44,
             child: ListView.builder(
@@ -223,7 +217,7 @@ class _ManageAchievementsContent extends StatelessWidget {
     );
   }
 
-  // ── SHOW FORM ────────────────────────────────────────────────────────────────
+  // SHOW FORM 
   void _showForm(
       BuildContext context, AchievementViewModel vm, AchievementModel? existing) {
     showModalBottomSheet(
@@ -237,7 +231,7 @@ class _ManageAchievementsContent extends StatelessWidget {
     );
   }
 
-  // ── DELETE CONFIRM ───────────────────────────────────────────────────────────
+  // DELETE CONFIRM 
   void _confirmDelete(
       BuildContext context, AchievementViewModel vm, AchievementModel item) {
     showDialog(
@@ -330,9 +324,7 @@ class _ManageAchievementsContent extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  SUMMARY STRIP  — live stats from stream
-// ─────────────────────────────────────────────────────────────────────────────
 class _SummaryStrip extends StatelessWidget {
   final Stream<List<AchievementModel>> stream;
   const _SummaryStrip({required this.stream});
@@ -441,9 +433,7 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ACHIEVEMENT CARD
-// ─────────────────────────────────────────────────────────────────────────────
 class _AchievementCard extends StatelessWidget {
   final AchievementModel item;
   final VoidCallback onEdit;
@@ -480,7 +470,7 @@ class _AchievementCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Trophy icon ──────────────────────────────────────
+                // Trophy icon 
                 Container(
                   width: 50, height: 50,
                   decoration: BoxDecoration(
@@ -492,7 +482,7 @@ class _AchievementCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 14),
 
-                // ── Details ──────────────────────────────────────────
+                // Details 
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +550,7 @@ class _AchievementCard extends StatelessWidget {
                   ),
                 ),
 
-                // ── Action buttons ────────────────────────────────────
+                // Action buttons 
                 const SizedBox(width: 8),
                 Column(
                   mainAxisSize: MainAxisSize.min,
@@ -595,9 +585,7 @@ class _AchievementCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  PILL LABEL
-// ─────────────────────────────────────────────────────────────────────────────
 class _Pill extends StatelessWidget {
   final String label;
   final Color bg;
@@ -638,9 +626,7 @@ class _Pill extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ICON BUTTON  (card actions)
-// ─────────────────────────────────────────────────────────────────────────────
 class _IconBtn extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -675,9 +661,7 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ADD / EDIT FORM  (bottom sheet)
-// ─────────────────────────────────────────────────────────────────────────────
 class _AchievementForm extends StatefulWidget {
   final AchievementModel? existing;
   const _AchievementForm({this.existing});
@@ -827,7 +811,7 @@ class _AchievementFormState extends State<_AchievementForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Drag handle ──────────────────────────────────────────────
+              // Drag handle 
               Center(
                 child: Container(
                   width: 40, height: 4,
@@ -839,7 +823,7 @@ class _AchievementFormState extends State<_AchievementForm> {
                 ),
               ),
 
-              // ── Sheet title ──────────────────────────────────────────────
+              // Sheet title 
               Row(
                 children: [
                   Container(
@@ -875,7 +859,7 @@ class _AchievementFormState extends State<_AchievementForm> {
               ),
               const SizedBox(height: 24),
 
-              // ── Section: Student Info ────────────────────────────────────
+              // Section: Student Info 
               _sectionLabel('Student Information'),
               const SizedBox(height: 10),
               _FormField(
@@ -886,7 +870,7 @@ class _AchievementFormState extends State<_AchievementForm> {
               ),
               const SizedBox(height: 14),
 
-              // ── Section: Achievement Info ────────────────────────────────
+              // Section: Achievement Info 
               _sectionLabel('Achievement Details'),
               const SizedBox(height: 10),
               _FormField(
@@ -933,7 +917,7 @@ class _AchievementFormState extends State<_AchievementForm> {
               ),
               const SizedBox(height: 28),
 
-              // ── Submit button ────────────────────────────────────────────
+              // Submit button 
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -999,9 +983,7 @@ class _AchievementFormState extends State<_AchievementForm> {
       );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  FORM FIELD WIDGET
-// ─────────────────────────────────────────────────────────────────────────────
 class _FormField extends StatelessWidget {
   final TextEditingController ctrl;
   final String label;
@@ -1064,9 +1046,7 @@ class _FormField extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  CATEGORY DROPDOWN
-// ─────────────────────────────────────────────────────────────────────────────
 class _CategoryDropdown extends StatelessWidget {
   final String value;
   final ValueChanged<String?> onChanged;
@@ -1117,9 +1097,7 @@ class _CategoryDropdown extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  EMPTY STATE
-// ─────────────────────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final VoidCallback onAdd;
   const _EmptyState({required this.onAdd});
@@ -1169,9 +1147,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ERROR STATE
-// ─────────────────────────────────────────────────────────────────────────────
 class _ErrorState extends StatelessWidget {
   final String message;
   const _ErrorState({required this.message});

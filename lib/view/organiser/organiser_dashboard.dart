@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../repository/event_repository.dart';
+import '../../repository/auth_repository.dart';
 import '../../viewmodel/auth_viewmodel.dart';
 import '../../viewmodel/event_viewmodel.dart';
 import '../admin/view_feedback.dart';
 import '../student/viewAchievement.dart';
 import 'manage_event.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS  (matches admin_page.dart)
-// ─────────────────────────────────────────────────────────────────────────────
+//  DESIGN TOKENS
 class _T {
   static const maroon      = Color(0xFF800000);
   static const maroonDark  = Color(0xFF5C0000);
@@ -28,9 +28,7 @@ class _T {
   ];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT
-// ─────────────────────────────────────────────────────────────────────────────
 class OrganiserDashboard extends StatelessWidget {
   const OrganiserDashboard({super.key});
 
@@ -43,9 +41,7 @@ class OrganiserDashboard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  CONTENT
-// ─────────────────────────────────────────────────────────────────────────────
 class _OrganiserDashboardContent extends StatelessWidget {
   const _OrganiserDashboardContent();
 
@@ -111,7 +107,7 @@ class _OrganiserDashboardContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Header ──────────────────────────────────────────────────
+              // Header 
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -201,7 +197,7 @@ class _OrganiserDashboardContent extends StatelessWidget {
                 ),
               ),
 
-              // ── Section: Manage ────────────────────────────────────────
+              // Section: Manage 
               const _SectionTitle(label: 'MANAGEMENT'),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -245,7 +241,7 @@ class _OrganiserDashboardContent extends StatelessWidget {
                 ),
               ),
 
-              // ── Section: My recent events preview ─────────────────────
+              // Section: My recent events preview 
               const _SectionTitle(label: 'MY RECENT EVENTS'),
               _RecentEvents(uid: uid, vm: vm, context: context,
                   onManage: () => Navigator.push(
@@ -259,9 +255,7 @@ class _OrganiserDashboardContent extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  RECENT EVENTS PREVIEW
-// ─────────────────────────────────────────────────────────────────────────────
 class _RecentEvents extends StatelessWidget {
   final String uid;
   final EventViewModel vm;
@@ -413,7 +407,7 @@ class _RecentEvents extends StatelessWidget {
                                     color: _T.maroon),
                                 const SizedBox(width: 6),
                                 _Pill(
-                                    label: e.spots,
+                                    label: e.spotsLabel,
                                     color: const Color(0xFF0A7A5A)),
                               ],
                             ),
@@ -454,10 +448,7 @@ class _RecentEvents extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  SHARED WIDGETS
-// ─────────────────────────────────────────────────────────────────────────────
-
 class _HeaderIconBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;

@@ -16,7 +16,7 @@ class AuthViewModel extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _status == AuthStatus.loading;
 
-  // ── Register (student only) ───────────────────────────────────────────────
+  // Register (student only) 
   Future<void> register({
     required String email,
     required String password,
@@ -39,7 +39,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Login ─────────────────────────────────────────────────────────────────
+  // Login
   Future<void> login(String email, String password) async {
     _set(AuthStatus.loading);
     try {
@@ -50,7 +50,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Sign out ──────────────────────────────────────────────────────────────
+  // Sign out
   Future<void> signOut() async {
     await _repo.signOut();
     _currentUser = null;
@@ -67,7 +67,7 @@ class AuthViewModel extends ChangeNotifier {
   }
 }
 
-  // ── Update profile ────────────────────────────────────────────────────────
+  // Update profile 
   Future<void> updateProfile({
     required String name,
     required String phone,
@@ -91,7 +91,7 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // Helpers 
   void _set(AuthStatus s) {
     _status = s;
     if (s != AuthStatus.error) _errorMessage = null;

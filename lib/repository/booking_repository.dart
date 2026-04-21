@@ -53,7 +53,7 @@ class BookingRepository {
         .toSet();
   }
 
-  // ── Submit booking with double-booking check (transaction) ─────────────────
+  // Submit booking with double-booking check (transaction) 
   Future<void> submit(BookingModel booking) async {
     await FirebaseFirestore.instance.runTransaction((tx) async {
       final existing = await _col
@@ -74,7 +74,7 @@ class BookingRepository {
     });
   }
 
-  // ── User's own bookings ────────────────────────────────────────────────────
+  // User's own bookings 
   Stream<List<BookingModel>> watchUserBookings(String userId) => _col
       .where('userId', isEqualTo: userId)
       .orderBy('createdAt', descending: true)
@@ -83,7 +83,7 @@ class BookingRepository {
           .map((d) => BookingModel.fromMap(d.id, d.data()))
           .toList());
 
-  // ── All bookings (admin/organiser) ─────────────────────────────────────────
+  // All bookings (admin/organiser) 
   Stream<List<BookingModel>> watchAll() => _col
       .orderBy('createdAt', descending: true)
       .snapshots()

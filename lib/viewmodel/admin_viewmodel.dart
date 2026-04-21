@@ -9,7 +9,6 @@ class AdminViewModel extends ChangeNotifier {
 
   String _search = '';
   String get search => _search;
-
   bool _busy = false;
   String? _error;
   String? get error => _error;

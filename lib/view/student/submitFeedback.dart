@@ -31,13 +31,13 @@ class _SubmitFeedbackContent extends StatefulWidget {
       _SubmitFeedbackContentState();
 }
 
-class _SubmitFeedbackContentState
-    extends State<_SubmitFeedbackContent> {
-  static const _maroon = Color(0xFF800000);
-  final _formKey = GlobalKey<FormState>();
-  final _feedbackCtrl = TextEditingController();
+class _SubmitFeedbackContentState extends State<_SubmitFeedbackContent> {
+  static const _maroon     = Color(0xFF800000);
+
+  final _formKey       = GlobalKey<FormState>();
+  final _feedbackCtrl  = TextEditingController();
   int _selectedCategory = 0;
-  int _rating = 0;
+  int _rating           = 0;
 
   final _categories = ['Events', 'Facilities', 'App'];
 
@@ -102,8 +102,9 @@ class _SubmitFeedbackContentState
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<FeedbackViewModel>();
+    final mq = MediaQuery.of(context);
 
-    final body = SingleChildScrollView(
+    final formBody = SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Form(
         key: _formKey,
@@ -217,7 +218,8 @@ class _SubmitFeedbackContentState
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2.5, color: Colors.white))
+                            strokeWidth: 2.5,
+                            color: Colors.white))
                     : const Text('Submit Feedback',
                         style: TextStyle(
                             fontSize: 15,
@@ -229,7 +231,14 @@ class _SubmitFeedbackContentState
       ),
     );
 
-    if (widget.embedded) return body;
+    if (widget.embedded) {
+      return Column(
+        children: [
+          _EmbeddedHeader(title: 'Feedback', topPadding: mq.padding.top),
+          Expanded(child: formBody),
+        ],
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
@@ -240,7 +249,41 @@ class _SubmitFeedbackContentState
             style: TextStyle(fontWeight: FontWeight.w700)),
         elevation: 0,
       ),
-      body: body,
+      body: formBody,
+    );
+  }
+}
+
+//  EMBEDDED HEADER
+class _EmbeddedHeader extends StatelessWidget {
+  final String title;
+  final double topPadding;
+  const _EmbeddedHeader({required this.title, required this.topPadding});
+
+  static const _maroon     = Color(0xFF800000);
+  static const _maroonDark = Color(0xFF5C0000);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_maroonDark, _maroon],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(20, topPadding + 14, 20, 18),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.3,
+        ),
+      ),
     );
   }
 }

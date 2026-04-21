@@ -13,7 +13,7 @@ class EventRepository {
     'Other',
   ];
 
-  // ── Stream all events (students view) ─────────────────────────────────────
+  // Stream all events (students view) 
   Stream<List<EventModel>> watchAll() => _col
       .orderBy('createdAt', descending: true)
       .snapshots()
@@ -21,7 +21,7 @@ class EventRepository {
           .map((d) => EventModel.fromMap(d.id, d.data()))
           .toList());
 
-  // ── Stream events by organiser (organiser's own events) ───────────────────
+  // Stream events by organiser (organiser's own events) 
   Stream<List<EventModel>> watchByOrganiser(String uid) => _col
       .where('createdBy', isEqualTo: uid)
       .orderBy('createdAt', descending: true)
@@ -30,12 +30,12 @@ class EventRepository {
           .map((d) => EventModel.fromMap(d.id, d.data()))
           .toList());
 
-  // ── Add ───────────────────────────────────────────────────────────────────
+  // Add 
   Future<void> add(EventModel e) => _col.add(e.toMap());
 
-  // ── Update ────────────────────────────────────────────────────────────────
+  // Update 
   Future<void> update(EventModel e) => _col.doc(e.id).update(e.toMap());
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // Delete 
   Future<void> delete(String id) => _col.doc(id).delete();
 }

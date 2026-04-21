@@ -3,9 +3,7 @@ import 'package:provider/provider.dart';
 import '../../model/user_model.dart';
 import '../../viewmodel/admin_viewmodel.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DESIGN TOKENS (matches admin_page.dart)
-// ─────────────────────────────────────────────────────────────────────────────
+//  DESIGN TOKENS
 class _T {
   static const maroon      = Color(0xFF800000);
   static const maroonDark  = Color(0xFF5C0000);
@@ -23,9 +21,7 @@ class _T {
   ];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROOT
-// ─────────────────────────────────────────────────────────────────────────────
 class ManageAccountsPage extends StatelessWidget {
   const ManageAccountsPage({super.key});
 
@@ -38,9 +34,7 @@ class ManageAccountsPage extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  STATE
-// ─────────────────────────────────────────────────────────────────────────────
 class _ManageAccountsContent extends StatefulWidget {
   const _ManageAccountsContent();
 
@@ -182,7 +176,7 @@ class _ManageAccountsContentState extends State<_ManageAccountsContent>
       ),
       body: Column(
         children: [
-          // ── Search bar ────────────────────────────────────────────
+          // Search bar 
           Container(
             color: _T.surface,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
@@ -237,7 +231,7 @@ class _ManageAccountsContentState extends State<_ManageAccountsContent>
             ),
           ),
 
-          // ── User count summary ────────────────────────────────────
+          // User count summary 
           StreamBuilder<List<UserModel>>(
             stream: vm.usersStream,
             builder: (ctx, snap) {
@@ -271,7 +265,7 @@ class _ManageAccountsContentState extends State<_ManageAccountsContent>
             },
           ),
 
-          // ── Tab lists ────────────────────────────────────────────
+          // Tab lists 
           Expanded(
             child: StreamBuilder<List<UserModel>>(
               stream: vm.usersStream,
@@ -348,9 +342,7 @@ class _ManageAccountsContentState extends State<_ManageAccountsContent>
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  STAT PILL
-// ─────────────────────────────────────────────────────────────────────────────
 class _StatPill extends StatelessWidget {
   final String label;
   final int count;
@@ -388,9 +380,7 @@ class _StatPill extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  USER LIST
-// ─────────────────────────────────────────────────────────────────────────────
 class _UserList extends StatelessWidget {
   final List<UserModel> users;
   final String emptyMessage;
@@ -448,9 +438,7 @@ class _UserList extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  USER CARD
-// ─────────────────────────────────────────────────────────────────────────────
 class _UserCard extends StatelessWidget {
   final UserModel user;
   final VoidCallback onToggle;
@@ -616,9 +604,7 @@ class _UserCard extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROLE CHIP
-// ─────────────────────────────────────────────────────────────────────────────
 class _RoleChip extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -666,9 +652,7 @@ class _RoleChip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  ROLE BADGE
-// ─────────────────────────────────────────────────────────────────────────────
 class _RoleBadge extends StatelessWidget {
   final String role;
   const _RoleBadge({required this.role});

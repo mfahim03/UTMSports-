@@ -16,7 +16,7 @@ class FeedbackViewModel extends ChangeNotifier {
 
   static const categories = ['All', 'Events', 'Facilities', 'App'];
 
-  // ── Stream for UI ─────────────────────────────────────────────────────────
+  // Stream for UI 
   Stream<List<FeedbackModel>> get stream => _selectedCategory == 'All'
       ? _repo.watchAll()
       : _repo.watchByCategory(_selectedCategory);
@@ -26,7 +26,7 @@ class FeedbackViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Submit (student) ──────────────────────────────────────────────────────
+  // Submit (student) 
   Future<bool> submit(FeedbackModel f) async {
     _busy = true;
     _error = null;

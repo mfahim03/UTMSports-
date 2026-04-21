@@ -3,13 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class EventModel {
   final String id;
   final String title;
-  final String date;        // display string e.g. "10 Jan 2025"
+  final String date;
   final String location;
-  final String category;   // Running | Badminton | Volleyball | Squash | Table Tennis | Other
-  final String spots;      // e.g. "200 spots left"
+  final String category;
   final String? description;
-  final String createdBy;  // organiser uid
+  final String createdBy;
   final DateTime createdAt;
+
+  // Player / team configuration 
+  final int minPlayers;        // minimum team size (required)
+  final int? maxPlayers;       // null = no upper limit
+  final List<String> badmintonTypes; // ['Solo','Double','Mixed'] — only for Badminton
+
+  // Registration open/closed 
+  final bool registrationOpen;
 
   const EventModel({
     required this.id,
@@ -17,24 +24,41 @@ class EventModel {
     required this.date,
     required this.location,
     required this.category,
-    required this.spots,
     this.description,
     required this.createdBy,
     required this.createdAt,
+    this.minPlayers = 1,
+    this.maxPlayers,
+    this.badmintonTypes = const [],
+    this.registrationOpen = true,
   });
 
-  factory EventModel.fromMap(String id, Map<String, dynamic> map) =>
-      EventModel(
+  // Preset defaults per sport 
+  static Map<String, dynamic> defaultsFor(String category) {
+    return switch (category) {
+      'Futsal'         => {'min': 5, 'max': 7,    'badminton': []},
+      'Volleyball'     => {'min': 8, 'max': 12,   'badminton': []},
+      'Badminton'      => {'min': 1, 'max': 2,    'badminton': ['Solo', 'Double', 'Mixed']},
+      'PUBG'           => {'min': 1, 'max': 5,    'badminton': []},
+      'Mobile Legends' => {'min': 1, 'max': 6,    'badminton': []},
+      _                => {'min': 1, 'max': null,  'badminton': []},
+    };
+  }
+
+  factory EventModel.fromMap(String id, Map<String, dynamic> map) => EventModel(
         id: id,
         title: map['title'] ?? '',
         date: map['date'] ?? '',
         location: map['location'] ?? '',
         category: map['category'] ?? '',
-        spots: map['spots'] ?? '',
         description: map['description'],
         createdBy: map['createdBy'] ?? '',
         createdAt:
             (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        minPlayers: (map['minPlayers'] ?? 1) as int,
+        maxPlayers: map['maxPlayers'] as int?,
+        badmintonTypes: List<String>.from(map['badmintonTypes'] ?? []),
+        registrationOpen: map['registrationOpen'] ?? true,
       );
 
   Map<String, dynamic> toMap() => {
@@ -42,10 +66,13 @@ class EventModel {
         'date': date,
         'location': location,
         'category': category,
-        'spots': spots,
         if (description != null) 'description': description,
         'createdBy': createdBy,
         'createdAt': Timestamp.fromDate(createdAt),
+        'minPlayers': minPlayers,
+        if (maxPlayers != null) 'maxPlayers': maxPlayers,
+        'badmintonTypes': badmintonTypes,
+        'registrationOpen': registrationOpen,
       };
 
   EventModel copyWith({
@@ -53,8 +80,12 @@ class EventModel {
     String? date,
     String? location,
     String? category,
-    String? spots,
     String? description,
+    int? minPlayers,
+    int? maxPlayers,
+    bool clearMax = false,
+    List<String>? badmintonTypes,
+    bool? registrationOpen,
   }) =>
       EventModel(
         id: id,
@@ -62,9 +93,20 @@ class EventModel {
         date: date ?? this.date,
         location: location ?? this.location,
         category: category ?? this.category,
-        spots: spots ?? this.spots,
         description: description ?? this.description,
         createdBy: createdBy,
         createdAt: createdAt,
+        minPlayers: minPlayers ?? this.minPlayers,
+        maxPlayers: clearMax ? null : (maxPlayers ?? this.maxPlayers),
+        badmintonTypes: badmintonTypes ?? this.badmintonTypes,
+        registrationOpen: registrationOpen ?? this.registrationOpen,
       );
+
+  // Helpers 
+  String get spotsLabel {
+    if (maxPlayers != null) return '$minPlayers–$maxPlayers players';
+    return '$minPlayers+ players';
+  }
+
+  bool get isBadminton => category == 'Badminton';
 }

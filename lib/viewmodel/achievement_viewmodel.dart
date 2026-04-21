@@ -24,7 +24,7 @@ class AchievementViewModel extends ChangeNotifier {
     'Other',
   ];
 
-  // ── Stream for UI ─────────────────────────────────────────────────────────
+  // Stream for UI
   Stream<List<AchievementModel>> get stream => _selectedCategory == 'All'
       ? _repo.watchAll()
       : _repo.watchByCategory(_selectedCategory);
@@ -34,7 +34,7 @@ class AchievementViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Add ───────────────────────────────────────────────────────────────────
+  // Add 
   Future<bool> add(AchievementModel a) async {
     _busy = true;
     _error = null;
@@ -51,7 +51,7 @@ class AchievementViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Update ────────────────────────────────────────────────────────────────
+  // Update 
   Future<bool> update(AchievementModel a) async {
     _busy = true;
     _error = null;
@@ -68,7 +68,7 @@ class AchievementViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Delete ────────────────────────────────────────────────────────────────
+  // Delete 
   Future<bool> delete(String id) async {
     _busy = true;
     _error = null;

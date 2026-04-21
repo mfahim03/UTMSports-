@@ -5,7 +5,7 @@ import '../repository/booking_repository.dart';
 class BookingViewModel extends ChangeNotifier {
   final _repo = BookingRepository();
 
-  // State 
+  // State
   String _selectedSport = 'Badminton';
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String? _selectedSlot;
@@ -84,7 +84,7 @@ class BookingViewModel extends ChangeNotifier {
     }
   }
 
-  // ── Submit booking ─────────────────────────────────────────────────────────
+  // Submit booking
   Future<bool> submit({
     required String userId,
     required String userEmail,
@@ -119,7 +119,7 @@ class BookingViewModel extends ChangeNotifier {
     }
   }
 
-  // ── User bookings stream ───────────────────────────────────────────────────
+  // User bookings stream 
   Stream<List<BookingModel>> watchUserBookings(String userId) =>
       _repo.watchUserBookings(userId);
 
