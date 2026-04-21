@@ -6,7 +6,7 @@ class AuthRepository {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
 
-  // ── Register (students only) ──────────────────────────────────────────────
+  // Register (students only) 
   Future<UserModel> register({
     required String email,
     required String password,
@@ -34,7 +34,7 @@ class AuthRepository {
     return user;
   }
 
-  // ── Login ─────────────────────────────────────────────────────────────────
+  // Login 
   Future<UserModel> login(String email, String password) async {
     final cred = await _auth.signInWithEmailAndPassword(
         email: email, password: password);
@@ -44,19 +44,19 @@ class AuthRepository {
     return UserModel.fromMap(doc.id, doc.data()!);
   }
 
-  // ── Forgot Password ──────────────────────────────────────────────
+  // Forgot Password 
   Future<void> sendPasswordReset(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
-  // ── Fetch single user ─────────────────────────────────────────────────────
+  // Fetch single user 
   Future<UserModel?> fetchUser(String uid) async {
     final doc = await _db.collection('users').doc(uid).get();
     if (!doc.exists) return null;
     return UserModel.fromMap(doc.id, doc.data()!);
   }
 
-  // ── Update profile ────────────────────────────────────────────────────────
+  // Update profile 
   Future<void> updateProfile({
     required String name,
     required String phone,
@@ -72,6 +72,6 @@ class AuthRepository {
     });
   }
 
-  // ── Sign out ──────────────────────────────────────────────────────────────
+  // Sign out 
   Future<void> signOut() => _auth.signOut();
 }

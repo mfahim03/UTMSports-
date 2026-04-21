@@ -5,7 +5,7 @@ import '../repository/booking_repository.dart';
 class BookingViewModel extends ChangeNotifier {
   final _repo = BookingRepository();
 
-  // ── State ──────────────────────────────────────────────────────────────────
+  // State 
   String _selectedSport = 'Badminton';
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String? _selectedSlot;
@@ -36,7 +36,7 @@ class BookingViewModel extends ChangeNotifier {
   String get dateString =>
       '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
 
-  // ── Setters ────────────────────────────────────────────────────────────────
+  // Setters 
   void setSport(String s) {
     _selectedSport = s;
     _selectedSlot = null;
@@ -65,7 +65,7 @@ class BookingViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Load availability ──────────────────────────────────────────────────────
+  // Load availability 
   Future<void> _loadBookedCourts() async {
     if (_selectedSlot == null) return;
     _loadingCourts = true;

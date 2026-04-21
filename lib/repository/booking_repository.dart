@@ -4,7 +4,7 @@ import '../model/booking_model.dart';
 class BookingRepository {
   final _col = FirebaseFirestore.instance.collection('bookings');
 
-  // ── Court counts per sport ─────────────────────────────────────────────────
+  // Court counts per sport 
   static const Map<String, int> courtCounts = {
     'Badminton': 8,
     'Table Tennis': 4,
@@ -12,7 +12,7 @@ class BookingRepository {
     'Squash': 4,
   };
 
-  // ── Time slots per sport ───────────────────────────────────────────────────
+  // Time slots per sport 
   static const Map<String, List<String>> timeSlots = {
     'Badminton': [
       '08:00 – 09:00', '09:00 – 10:00', '10:00 – 11:00',
@@ -36,7 +36,7 @@ class BookingRepository {
     ],
   };
 
-  // ── Get booked courts for a sport/date/slot ────────────────────────────────
+  // Get booked courts for a sport/date/slot 
   Future<Set<int>> getBookedCourts({
     required String sport,
     required String date,
