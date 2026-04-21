@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class EventModel {
   final String id;
   final String title;
-  final String date;
+  final String date;      // Display string e.g. "10 Jan 2025"
+  final String dateStr;   // YYYY-MM-DD
   final String location;
   final String category;
   final String? description;
@@ -11,17 +12,19 @@ class EventModel {
   final DateTime createdAt;
 
   // Player / team configuration 
-  final int minPlayers;        // minimum team size (required)
-  final int? maxPlayers;       // null = no upper limit
-  final List<String> badmintonTypes; // ['Solo','Double','Mixed'] — only for Badminton
+  final int minPlayers;
+  final int? maxPlayers;
+  final int? maxTeams;          // null = unlimited teams
+  final List<String> badmintonTypes;
 
-  // Registration open/closed 
+  // Registration 
   final bool registrationOpen;
 
   const EventModel({
     required this.id,
     required this.title,
     required this.date,
+    required this.dateStr,
     required this.location,
     required this.category,
     this.description,
@@ -29,19 +32,35 @@ class EventModel {
     required this.createdAt,
     this.minPlayers = 1,
     this.maxPlayers,
+    this.maxTeams,
     this.badmintonTypes = const [],
     this.registrationOpen = true,
   });
 
+  // Registration closes at end of event day 
+  bool get isEventPassed {
+    try {
+      final parts = dateStr.split('-');
+      if (parts.length != 3) return false;
+      final eventDate = DateTime(
+          int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      final closingTime = DateTime(
+          eventDate.year, eventDate.month, eventDate.day, 23, 59, 59);
+      return DateTime.now().isAfter(closingTime);
+    } catch (_) {
+      return false;
+    }
+  }
+
   // Preset defaults per sport 
   static Map<String, dynamic> defaultsFor(String category) {
     return switch (category) {
-      'Futsal'         => {'min': 5, 'max': 7,    'badminton': []},
-      'Volleyball'     => {'min': 8, 'max': 12,   'badminton': []},
-      'Badminton'      => {'min': 1, 'max': 2,    'badminton': ['Solo', 'Double', 'Mixed']},
-      'PUBG'           => {'min': 1, 'max': 5,    'badminton': []},
-      'Mobile Legends' => {'min': 1, 'max': 6,    'badminton': []},
-      _                => {'min': 1, 'max': null,  'badminton': []},
+      'Futsal'         => {'min': 5,  'max': 7,    'badminton': []},
+      'Volleyball'     => {'min': 8,  'max': 12,   'badminton': []},
+      'Badminton'      => {'min': 1,  'max': 2,    'badminton': ['Solo', 'Double', 'Mixed']},
+      'PUBG'           => {'min': 1,  'max': 5,    'badminton': []},
+      'Mobile Legends' => {'min': 1,  'max': 6,    'badminton': []},
+      _                => {'min': 1,  'max': null, 'badminton': []},
     };
   }
 
@@ -49,6 +68,7 @@ class EventModel {
         id: id,
         title: map['title'] ?? '',
         date: map['date'] ?? '',
+        dateStr: map['dateStr'] ?? '',
         location: map['location'] ?? '',
         category: map['category'] ?? '',
         description: map['description'],
@@ -57,6 +77,7 @@ class EventModel {
             (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
         minPlayers: (map['minPlayers'] ?? 1) as int,
         maxPlayers: map['maxPlayers'] as int?,
+        maxTeams: map['maxTeams'] as int?,
         badmintonTypes: List<String>.from(map['badmintonTypes'] ?? []),
         registrationOpen: map['registrationOpen'] ?? true,
       );
@@ -64,6 +85,7 @@ class EventModel {
   Map<String, dynamic> toMap() => {
         'title': title,
         'date': date,
+        'dateStr': dateStr,
         'location': location,
         'category': category,
         if (description != null) 'description': description,
@@ -71,6 +93,7 @@ class EventModel {
         'createdAt': Timestamp.fromDate(createdAt),
         'minPlayers': minPlayers,
         if (maxPlayers != null) 'maxPlayers': maxPlayers,
+        if (maxTeams != null) 'maxTeams': maxTeams,
         'badmintonTypes': badmintonTypes,
         'registrationOpen': registrationOpen,
       };
@@ -78,12 +101,15 @@ class EventModel {
   EventModel copyWith({
     String? title,
     String? date,
+    String? dateStr,
     String? location,
     String? category,
     String? description,
     int? minPlayers,
     int? maxPlayers,
     bool clearMax = false,
+    int? maxTeams,
+    bool clearMaxTeams = false,
     List<String>? badmintonTypes,
     bool? registrationOpen,
   }) =>
@@ -91,6 +117,7 @@ class EventModel {
         id: id,
         title: title ?? this.title,
         date: date ?? this.date,
+        dateStr: dateStr ?? this.dateStr,
         location: location ?? this.location,
         category: category ?? this.category,
         description: description ?? this.description,
@@ -98,15 +125,16 @@ class EventModel {
         createdAt: createdAt,
         minPlayers: minPlayers ?? this.minPlayers,
         maxPlayers: clearMax ? null : (maxPlayers ?? this.maxPlayers),
+        maxTeams: clearMaxTeams ? null : (maxTeams ?? this.maxTeams),
         badmintonTypes: badmintonTypes ?? this.badmintonTypes,
         registrationOpen: registrationOpen ?? this.registrationOpen,
       );
 
   // Helpers 
+  bool get isBadminton => category == 'Badminton';
+
   String get spotsLabel {
     if (maxPlayers != null) return '$minPlayers–$maxPlayers players';
     return '$minPlayers+ players';
   }
-
-  bool get isBadminton => category == 'Badminton';
 }

@@ -134,8 +134,7 @@ class _ManageEventsContent extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              size: 18),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Manage Events',
@@ -164,7 +163,8 @@ class _ManageEventsContent extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 72, height: 72,
+                    width: 72,
+                    height: 72,
                     decoration: BoxDecoration(
                       color: _T.maroonFade,
                       borderRadius: BorderRadius.circular(20),
@@ -180,8 +180,8 @@ class _ManageEventsContent extends StatelessWidget {
                           color: _T.textSec)),
                   const SizedBox(height: 4),
                   const Text('Tap + to create your first event.',
-                      style:
-                          TextStyle(fontSize: 12.5, color: _T.textHint)),
+                      style: TextStyle(
+                          fontSize: 12.5, color: _T.textHint)),
                   const SizedBox(height: 20),
                   GestureDetector(
                     onTap: () => _showForm(context, vm, null),
@@ -208,8 +208,8 @@ class _ManageEventsContent extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             itemCount: list.length,
             itemBuilder: (_, i) {
-              final e   = list[i];
-              final col = _colors[e.category] ?? _T.maroon;
+              final e    = list[i];
+              final col  = _colors[e.category] ?? _T.maroon;
               final icon = _icons[e.category] ?? Icons.emoji_events;
 
               return Container(
@@ -228,7 +228,8 @@ class _ManageEventsContent extends StatelessWidget {
                       child: Row(
                         children: [
                           Container(
-                            width: 50, height: 50,
+                            width: 50,
+                            height: 50,
                             decoration: BoxDecoration(
                               color: col.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(14),
@@ -264,8 +265,15 @@ class _ManageEventsContent extends StatelessWidget {
                                       label: e.maxPlayers != null
                                           ? '${e.minPlayers}–${e.maxPlayers} pax'
                                           : '${e.minPlayers}+ pax',
-                                      color: const Color(0xFF0A7A5A),
+                                      color:
+                                          const Color(0xFF0A7A5A),
                                     ),
+                                    if (e.maxTeams != null)
+                                      _Pill(
+                                        label:
+                                            '${e.maxTeams} teams max',
+                                        color: Colors.purple.shade700,
+                                      ),
                                     _Pill(
                                       label: e.registrationOpen
                                           ? 'Open'
@@ -357,7 +365,9 @@ class _ManageEventsContent extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 //  EVENT FORM
+// ─────────────────────────────────────────────────────────────────────────────
 class _EventForm extends StatefulWidget {
   final EventModel? existing;
   const _EventForm({this.existing});
@@ -374,11 +384,14 @@ class _EventFormState extends State<_EventForm> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _minCtrl;
   late final TextEditingController _maxCtrl;
+  late final TextEditingController _maxTeamsCtrl;
 
   late String _category;
   late bool _regOpen;
   late List<String> _badmintonTypes;
-  bool _maxUnlimited = false;
+  bool _maxUnlimited    = false;
+  bool _maxTeamsUnlimited = true;
+  DateTime? _selectedDate;
 
   static const _categories = [
     'Futsal', 'Volleyball', 'Badminton', 'PUBG',
@@ -397,7 +410,16 @@ class _EventFormState extends State<_EventForm> {
     _category     = e?.category ?? 'Futsal';
     _regOpen      = e?.registrationOpen ?? true;
     _badmintonTypes = List.from(e?.badmintonTypes ?? []);
-    _maxUnlimited = e?.maxPlayers == null;
+    _maxUnlimited   = e?.maxPlayers == null;
+    _maxTeamsUnlimited = e?.maxTeams == null;
+
+    if (e != null && e.dateStr.isNotEmpty) {
+      try {
+        final p = e.dateStr.split('-');
+        _selectedDate = DateTime(
+            int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+      } catch (_) {}
+    }
 
     final defaults = EventModel.defaultsFor(_category);
     _minCtrl = TextEditingController(
@@ -406,6 +428,9 @@ class _EventFormState extends State<_EventForm> {
         text: e?.maxPlayers != null
             ? '${e!.maxPlayers}'
             : '${defaults['max'] ?? ''}');
+    _maxTeamsCtrl = TextEditingController(
+        text: e?.maxTeams != null ? '${e!.maxTeams}' : '');
+
     if (e?.maxPlayers == null && defaults['max'] == null) {
       _maxUnlimited = true;
     }
@@ -419,6 +444,7 @@ class _EventFormState extends State<_EventForm> {
     _descCtrl.dispose();
     _minCtrl.dispose();
     _maxCtrl.dispose();
+    _maxTeamsCtrl.dispose();
     super.dispose();
   }
 
@@ -441,17 +467,36 @@ class _EventFormState extends State<_EventForm> {
 
   Future<void> _submit(EventViewModel vm) async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Please select an event date'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    final minP = int.tryParse(_minCtrl.text.trim()) ?? 1;
-    final maxP = _maxUnlimited
+    final minP  = int.tryParse(_minCtrl.text.trim()) ?? 1;
+    final maxP  = _maxUnlimited ? null : int.tryParse(_maxCtrl.text.trim());
+    final maxT  = _maxTeamsUnlimited
         ? null
-        : int.tryParse(_maxCtrl.text.trim());
+        : int.tryParse(_maxTeamsCtrl.text.trim());
+
+    final d = _selectedDate!;
+    const months = [
+      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final displayDate = '${d.day} ${months[d.month]} ${d.year}';
+    final dateStr =
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
     final model = widget.existing != null
         ? widget.existing!.copyWith(
             title: _titleCtrl.text.trim(),
-            date: _dateCtrl.text.trim(),
+            date: displayDate,
+            dateStr: dateStr,
             location: _locationCtrl.text.trim(),
             category: _category,
             description: _descCtrl.text.trim().isEmpty
@@ -460,13 +505,16 @@ class _EventFormState extends State<_EventForm> {
             minPlayers: minP,
             maxPlayers: maxP,
             clearMax: _maxUnlimited,
+            maxTeams: maxT,
+            clearMaxTeams: _maxTeamsUnlimited,
             badmintonTypes: _badmintonTypes,
             registrationOpen: _regOpen,
           )
         : EventModel(
             id: '',
             title: _titleCtrl.text.trim(),
-            date: _dateCtrl.text.trim(),
+            date: displayDate,
+            dateStr: dateStr,
             location: _locationCtrl.text.trim(),
             category: _category,
             description: _descCtrl.text.trim().isEmpty
@@ -476,6 +524,7 @@ class _EventFormState extends State<_EventForm> {
             createdAt: DateTime.now(),
             minPlayers: minP,
             maxPlayers: maxP,
+            maxTeams: maxT,
             badmintonTypes: _badmintonTypes,
             registrationOpen: _regOpen,
           );
@@ -488,9 +537,8 @@ class _EventFormState extends State<_EventForm> {
     if (ok) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(widget.existing != null
-            ? 'Event updated'
-            : 'Event created'),
+        content: Text(
+            widget.existing != null ? 'Event updated' : 'Event created'),
         backgroundColor: _T.maroon,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -522,7 +570,8 @@ class _EventFormState extends State<_EventForm> {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 20),
                   decoration: BoxDecoration(
                       color: Colors.grey.shade300,
@@ -536,7 +585,7 @@ class _EventFormState extends State<_EventForm> {
                       color: _T.textPri)),
               const SizedBox(height: 20),
 
-              // Category picker
+              // ── Category picker ───────────────────────────────────
               const _Label('Sport / Category'),
               const SizedBox(height: 8),
               SizedBox(
@@ -582,17 +631,85 @@ class _EventFormState extends State<_EventForm> {
               _field(_titleCtrl, 'Event Title', Icons.title_rounded,
                   required: true),
               const SizedBox(height: 12),
-              _field(_dateCtrl, 'Date (e.g. 10 Jan 2025)',
-                  Icons.calendar_today_outlined,
-                  required: true),
+
+              // ── Date picker ───────────────────────────────────────
+              GestureDetector(
+                onTap: () async {
+                  final now     = DateTime.now();
+                  final minDate = DateTime(now.year, now.month, now.day + 1);
+                  final picked  = await showDatePicker(
+                    context: context,
+                    initialDate: _selectedDate ?? minDate,
+                    firstDate: minDate,
+                    lastDate: DateTime(now.year + 2),
+                    helpText: 'Select event date',
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(
+                            primary: _T.maroon),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _selectedDate = picked;
+                      const m = [
+                        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                      ];
+                      _dateCtrl.text =
+                          '${picked.day} ${m[picked.month]} ${picked.year}';
+                    });
+                  }
+                },
+                child: AbsorbPointer(
+                  child: TextFormField(
+                    controller: _dateCtrl,
+                    validator: (_) => _selectedDate == null
+                        ? 'Please select a date'
+                        : null,
+                    readOnly: true,
+                    decoration: InputDecoration(
+                      labelText: 'Event Date',
+                      prefixIcon: const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 20),
+                      suffixIcon: _selectedDate != null
+                          ? null
+                          : const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20),
+                      hintText: 'Tap to pick date',
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              color: Colors.grey.shade300)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                              color: Colors.grey.shade300)),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                              color: _T.maroon, width: 1.8)),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 12),
+
               _field(_locationCtrl, 'Location',
                   Icons.location_on_outlined,
                   required: true),
               const SizedBox(height: 16),
 
-              // Player config
-              const _Label('Team Size'),
+              // ── Player config ─────────────────────────────────────
+              const _Label('Player Size Per Team'),
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -648,7 +765,7 @@ class _EventFormState extends State<_EventForm> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text('No maximum limit',
+                    const Text('No maximum player limit',
                         style: TextStyle(
                             fontSize: 13, color: _T.textSec)),
                   ],
@@ -656,7 +773,58 @@ class _EventFormState extends State<_EventForm> {
               ),
               const SizedBox(height: 16),
 
-              // Badminton formats
+              // ── Max teams ─────────────────────────────────────────
+              const _Label('Max Teams Allowed'),
+              const SizedBox(height: 10),
+              _maxTeamsUnlimited
+                  ? GestureDetector(
+                      onTap: () =>
+                          setState(() => _maxTeamsUnlimited = false),
+                      child: Container(
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: Colors.grey.shade300),
+                        ),
+                        child: const Center(
+                          child: Text('Unlimited teams',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: _T.textSec)),
+                        ),
+                      ),
+                    )
+                  : _field(_maxTeamsCtrl, 'Max teams (opt.)',
+                      Icons.group_work_outlined,
+                      keyboard: TextInputType.number),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => setState(
+                    () => _maxTeamsUnlimited = !_maxTeamsUnlimited),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: _maxTeamsUnlimited,
+                        activeColor: _T.maroon,
+                        onChanged: (v) => setState(
+                            () => _maxTeamsUnlimited = v ?? false),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('No team limit',
+                        style: TextStyle(
+                            fontSize: 13, color: _T.textSec)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Badminton formats ─────────────────────────────────
               if (_category == 'Badminton') ...[
                 const _Label('Available Formats'),
                 const SizedBox(height: 10),
@@ -707,7 +875,7 @@ class _EventFormState extends State<_EventForm> {
                 const SizedBox(height: 16),
               ],
 
-              // Registration open toggle
+              // ── Registration open toggle ──────────────────────────
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -765,11 +933,13 @@ class _EventFormState extends State<_EventForm> {
                   ),
                   child: vm.busy
                       ? const SizedBox(
-                          width: 22, height: 22,
+                          width: 22,
+                          height: 22,
                           child: CircularProgressIndicator(
                               strokeWidth: 2.5,
                               color: Colors.white))
-                      : Text(isEdit ? 'Save Changes' : 'Create Event',
+                      : Text(
+                          isEdit ? 'Save Changes' : 'Create Event',
                           style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700)),
@@ -782,11 +952,14 @@ class _EventFormState extends State<_EventForm> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String label,
-      IconData icon,
-      {bool required = false,
-      int maxLines = 1,
-      TextInputType? keyboard}) {
+  Widget _field(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    bool required = false,
+    int maxLines = 1,
+    TextInputType? keyboard,
+  }) {
     return TextFormField(
       controller: ctrl,
       maxLines: maxLines,
@@ -813,14 +986,16 @@ class _EventFormState extends State<_EventForm> {
             borderSide: BorderSide(color: Colors.grey.shade300)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                const BorderSide(color: _T.maroon, width: 1.8)),
+            borderSide: const BorderSide(
+                color: _T.maroon, width: 1.8)),
       ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 //  HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 class _Label extends StatelessWidget {
   final String text;
   const _Label(this.text);
@@ -841,7 +1016,8 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: color.withOpacity(0.08),
           borderRadius: BorderRadius.circular(20),
@@ -859,17 +1035,19 @@ class _IconBtn extends StatelessWidget {
   final IconData icon;
   final Color color, bg;
   final VoidCallback onTap;
-  const _IconBtn(
-      {required this.icon,
-      required this.color,
-      required this.bg,
-      required this.onTap});
+  const _IconBtn({
+    required this.icon,
+    required this.color,
+    required this.bg,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 32, height: 32,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
               color: bg, borderRadius: BorderRadius.circular(8)),
           child: Icon(icon, size: 16, color: color),

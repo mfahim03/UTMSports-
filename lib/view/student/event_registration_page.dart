@@ -19,7 +19,9 @@ class EventRegistrationPage extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 //  TOKENS
+// ─────────────────────────────────────────────────────────────────────────────
 class _T {
   static const maroon     = Color(0xFF800000);
   static const maroonDark = Color(0xFF5C0000);
@@ -34,68 +36,63 @@ class _T {
   ];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 //  CONTENT
+// ─────────────────────────────────────────────────────────────────────────────
 class _RegistrationContent extends StatefulWidget {
   final EventModel event;
   const _RegistrationContent({required this.event});
 
   @override
-  State<_RegistrationContent> createState() =>
-      _RegistrationContentState();
+  State<_RegistrationContent> createState() => _RegistrationContentState();
 }
 
 class _RegistrationContentState extends State<_RegistrationContent> {
-  String? _selectedFormat; // only for Badminton
+  String? _selectedFormat;
   final List<TextEditingController> _memberCtrl = [];
   final _formKey = GlobalKey<FormState>();
 
   EventModel get e => widget.event;
 
-  // Effective team size = 1 (captain) + extra members
-  int get _extraSlots => _memberCtrl.length;
+  int get _extraSlots   => _memberCtrl.length;
   int get _totalMembers => 1 + _extraSlots;
-
-  // Max extra members = maxPlayers - 1 (captain already counts)
-  int get _maxExtra => (e.maxPlayers ?? 99) - 1;
-  int get _minExtra => (e.minPlayers - 1).clamp(0, 9999);
-
-  bool get _canAddMore => _extraSlots < _maxExtra;
+  int get _maxExtra     => (e.maxPlayers ?? 99) - 1;
+  int get _minExtra     => (e.minPlayers - 1).clamp(0, 9999);
+  bool get _canAddMore  => _extraSlots < _maxExtra;
   bool get _meetsMinimum => _totalMembers >= e.minPlayers;
 
   static const _icons = <String, IconData>{
-    'Futsal':          Icons.sports_soccer,
-    'Volleyball':      Icons.sports_volleyball,
-    'Badminton':       Icons.sports_tennis,
-    'PUBG':            Icons.videogame_asset_rounded,
-    'Mobile Legends':  Icons.smartphone_rounded,
-    'Running':         Icons.directions_run,
-    'Squash':          Icons.sports_handball,
-    'Table Tennis':    Icons.sports_tennis,
-    'Other':           Icons.emoji_events,
+    'Futsal':         Icons.sports_soccer,
+    'Volleyball':     Icons.sports_volleyball,
+    'Badminton':      Icons.sports_tennis,
+    'PUBG':           Icons.videogame_asset_rounded,
+    'Mobile Legends': Icons.smartphone_rounded,
+    'Running':        Icons.directions_run,
+    'Squash':         Icons.sports_handball,
+    'Table Tennis':   Icons.sports_tennis,
+    'Other':          Icons.emoji_events,
   };
   static const _colors = <String, Color>{
-    'Futsal':          Color(0xFF0369A1),
-    'Volleyball':      Color(0xFF800000),
-    'Badminton':       Color(0xFF065F46),
-    'PUBG':            Color(0xFF5C3D8F),
-    'Mobile Legends':  Color(0xFF9A3412),
-    'Running':         Color(0xFF800000),
-    'Squash':          Color(0xFF065F46),
-    'Table Tennis':    Color(0xFF7C3AED),
-    'Other':           Color(0xFF6B6B6B),
+    'Futsal':         Color(0xFF0369A1),
+    'Volleyball':     Color(0xFF800000),
+    'Badminton':      Color(0xFF065F46),
+    'PUBG':           Color(0xFF5C3D8F),
+    'Mobile Legends': Color(0xFF9A3412),
+    'Running':        Color(0xFF800000),
+    'Squash':         Color(0xFF065F46),
+    'Table Tennis':   Color(0xFF7C3AED),
+    'Other':          Color(0xFF6B6B6B),
   };
 
-  Color get _col => _colors[e.category] ?? _T.maroon;
+  Color get _col  => _colors[e.category] ?? _T.maroon;
   IconData get _icon => _icons[e.category] ?? Icons.emoji_events;
 
   @override
   void initState() {
     super.initState();
-    // Pre-fill required extra slots for min team size
     for (var i = 0; i < _minExtra; i++) {
       _memberCtrl.add(TextEditingController());
     }
-    // Default format for badminton
     if (e.isBadminton && e.badmintonTypes.isNotEmpty) {
       _selectedFormat = e.badmintonTypes.first;
       _applyBadmintonFormat(_selectedFormat!);
@@ -103,7 +100,6 @@ class _RegistrationContentState extends State<_RegistrationContent> {
   }
 
   void _applyBadmintonFormat(String fmt) {
-    // Solo=0 extra, Double=1 extra, Mixed=1 extra
     final needed = switch (fmt) {
       'Solo'   => 0,
       'Double' => 1,
@@ -154,9 +150,28 @@ class _RegistrationContentState extends State<_RegistrationContent> {
       return;
     }
 
-    final user    = context.read<AuthViewModel>().currentUser;
-    final fbUser  = FirebaseAuth.instance.currentUser;
-    final vm      = context.read<EventRegistrationViewModel>();
+    // Event already passed check
+    if (e.isEventPassed) {
+      _snack('Registration is closed — this event has already passed.',
+          isError: true);
+      return;
+    }
+
+    final vm = context.read<EventRegistrationViewModel>();
+
+    // Team capacity check
+    if (e.maxTeams != null) {
+      final confirmedCount = await vm.confirmedTeamCount(e.id);
+      if (confirmedCount >= e.maxTeams!) {
+        if (!mounted) return;
+        _snack('Sorry, all ${e.maxTeams} team slot(s) are full.',
+            isError: true);
+        return;
+      }
+    }
+
+    final user   = context.read<AuthViewModel>().currentUser;
+    final fbUser = FirebaseAuth.instance.currentUser;
     final members = _memberCtrl.map((c) => c.text.trim()).toList();
 
     final reg = EventRegistrationModel(
@@ -189,8 +204,8 @@ class _RegistrationContentState extends State<_RegistrationContent> {
       backgroundColor:
           isError ? Colors.red.shade700 : Colors.green.shade700,
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)),
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     ));
   }
 
@@ -209,23 +224,20 @@ class _RegistrationContentState extends State<_RegistrationContent> {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  shape: BoxShape.circle),
+                  color: Colors.green.shade50, shape: BoxShape.circle),
               child: Icon(Icons.how_to_reg_rounded,
                   color: Colors.green.shade600, size: 38),
             ),
             const SizedBox(height: 18),
             const Text('Registered!',
-                style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.w800)),
+                style:
+                    TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(
               'Your registration for ${e.title} is under review. The organiser will verify your details.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                  fontSize: 13,
-                  color: _T.textSec,
-                  height: 1.5),
+                  fontSize: 13, color: _T.textSec, height: 1.5),
             ),
             const SizedBox(height: 22),
             SizedBox(
@@ -233,8 +245,8 @@ class _RegistrationContentState extends State<_RegistrationContent> {
               height: 48,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context); // close dialog
-                  Navigator.pop(context); // back to events
+                  Navigator.pop(context);
+                  Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _T.maroon,
@@ -252,7 +264,6 @@ class _RegistrationContentState extends State<_RegistrationContent> {
     );
   }
 
-  // Helper to show error/success messages in a SnackBar
   @override
   Widget build(BuildContext context) {
     final vm   = context.watch<EventRegistrationViewModel>();
@@ -277,7 +288,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Event banner 
+            // ── Event banner ──────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -303,8 +314,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child:
-                        Icon(_icon, color: Colors.white, size: 30),
+                    child: Icon(_icon, color: Colors.white, size: 30),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -330,6 +340,8 @@ class _RegistrationContentState extends State<_RegistrationContent> {
                                 label: e.maxPlayers != null
                                     ? '${e.minPlayers}–${e.maxPlayers} pax'
                                     : '${e.minPlayers}+ pax'),
+                            if (e.maxTeams != null)
+                              _WhiteChip(label: '${e.maxTeams} teams max'),
                           ],
                         ),
                       ],
@@ -340,7 +352,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
             ),
             const SizedBox(height: 20),
 
-            // Badminton format selector 
+            // ── Badminton format selector ─────────────────────────────
             if (e.isBadminton && e.badmintonTypes.isNotEmpty) ...[
               _SectionHeader(label: 'Select Format'),
               const SizedBox(height: 10),
@@ -382,7 +394,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
               const SizedBox(height: 16),
             ],
 
-            // Captain (you) 
+            // ── Captain (you) ─────────────────────────────────────────
             _SectionHeader(label: 'Team Captain (You)'),
             const SizedBox(height: 10),
             _Card(
@@ -435,15 +447,15 @@ class _RegistrationContentState extends State<_RegistrationContent> {
             ),
             const SizedBox(height: 16),
 
-            // Team members 
+            // ── Team members ──────────────────────────────────────────
             if (!e.isBadminton ||
                 (_selectedFormat != null &&
                     _selectedFormat != 'Solo')) ...[
               Row(
                 children: [
                   _SectionHeader(
-                      label: 'Team Members'
-                          '${e.maxPlayers != null ? " (max ${e.maxPlayers! - 1} extra)" : ""}'),
+                      label:
+                          'Team Members${e.maxPlayers != null ? " (max ${e.maxPlayers! - 1} extra)" : ""}'),
                   const Spacer(),
                   if (_canAddMore)
                     GestureDetector(
@@ -491,7 +503,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
                 )
               else
                 ..._memberCtrl.asMap().entries.map((entry) {
-                  final i   = entry.key;
+                  final i    = entry.key;
                   final ctrl = entry.value;
                   final isRequired = i < _minExtra;
                   return _MemberField(
@@ -550,7 +562,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
             ] else
               const SizedBox(height: 8),
 
-            // Info notice 
+            // ── Info notice ───────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -566,7 +578,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      'Your registration will be reviewed by the organiser. You will see the status update in My Registrations.',
+                      'Registration is open until the event date. Your registration will be reviewed by the organiser. You will see the status update in My Registrations.',
                       style: TextStyle(
                           fontSize: 12,
                           color: _T.textSec,
@@ -578,14 +590,20 @@ class _RegistrationContentState extends State<_RegistrationContent> {
             ),
             const SizedBox(height: 24),
 
-            // Submit button 
+            // ── Submit button ─────────────────────────────────────────
             SizedBox(
               height: 54,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [_col, _T.maroonDark == _col ? const Color(0xFF5C0000) : _col.withBlue((_col.blue + 30).clamp(0, 255))],
+                    colors: [
+                      _col,
+                      _T.maroonDark == _col
+                          ? const Color(0xFF5C0000)
+                          : _col.withBlue(
+                              (_col.blue + 30).clamp(0, 255))
+                    ],
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                   ),
@@ -636,7 +654,9 @@ class _RegistrationContentState extends State<_RegistrationContent> {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 //  MEMBER FIELD
+// ─────────────────────────────────────────────────────────────────────────────
 class _MemberField extends StatelessWidget {
   final int index;
   final TextEditingController controller;
@@ -680,13 +700,12 @@ class _MemberField extends StatelessWidget {
               child: TextFormField(
                 controller: controller,
                 validator: isRequired
-                    ? (v) =>
-                        (v == null || v.trim().isEmpty)
-                            ? 'Member name required'
-                            : null
+                    ? (v) => (v == null || v.trim().isEmpty)
+                        ? 'Member name required'
+                        : null
                     : null,
-                style: const TextStyle(
-                    fontSize: 14, color: _T.textPri),
+                style:
+                    const TextStyle(fontSize: 14, color: _T.textPri),
                 decoration: InputDecoration(
                   hintText: 'Member ${index + 2} name',
                   hintStyle: const TextStyle(
@@ -719,7 +738,9 @@ class _MemberField extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
 //  HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String label;
   const _SectionHeader({required this.label});

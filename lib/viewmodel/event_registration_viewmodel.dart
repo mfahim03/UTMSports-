@@ -11,7 +11,7 @@ class EventRegistrationViewModel extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  // Submit 
+  // Submit
   Future<bool> submit(EventRegistrationModel reg) async {
     _setBusy(true);
     try {
@@ -30,11 +30,15 @@ class EventRegistrationViewModel extends ChangeNotifier {
     }
   }
 
-  // Check if registered 
+  // Check if registered
   Future<bool> isRegistered(String eventId, String userId) =>
       _repo.isRegistered(eventId, userId);
 
-  // User's registrations 
+  // Count confirmed teams for an event
+  Future<int> confirmedTeamCount(String eventId) =>
+      _repo.confirmedTeamCount(eventId);
+
+  // User's registrations
   Stream<List<EventRegistrationModel>> userRegistrations(String uid) =>
       _repo.watchUserRegistrations(uid);
 
@@ -42,7 +46,7 @@ class EventRegistrationViewModel extends ChangeNotifier {
   Stream<List<EventRegistrationModel>> eventRegistrations(String eventId) =>
       _repo.watchEventRegistrations(eventId);
 
-  // Update status 
+  // Update status
   Future<bool> updateStatus(String id, RegStatus status,
       {String? note}) async {
     _setBusy(true);

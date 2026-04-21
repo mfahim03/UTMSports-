@@ -2,14 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../model/booking_model.dart';
 
 class BookingRepository {
-  final _col = FirebaseFirestore.instance.collection('bookings');
+  final _col      = FirebaseFirestore.instance.collection('bookings');
+  final _eventCol = FirebaseFirestore.instance.collection('events');
 
   // Court counts per sport 
   static const Map<String, int> courtCounts = {
-    'Badminton': 8,
+    'Badminton':    8,
     'Table Tennis': 4,
-    'Volleyball': 3,
-    'Squash': 4,
+    'Volleyball':   3,
+    'Squash':       4,
   };
 
   // Time slots per sport 
@@ -36,26 +37,58 @@ class BookingRepository {
     ],
   };
 
+  // Check if an event occupies this sport + date (blocks ALL courts) 
+  // Events store date as display string (e.g. "10 Jan 2025") so we store a
+  // separate "dateStr" (YYYY-MM-DD) on event documents written from the form.
+  // We match against the booking dateStr.
+  Future<bool> isEventDay({
+    required String sport,
+    required String dateStr, // "YYYY-MM-DD"
+  }) async {
+    // Events with matching category and dateStr block all daily bookings
+    final snap = await _eventCol
+        .where('category', isEqualTo: sport)
+        .where('dateStr', isEqualTo: dateStr)
+        .limit(1)
+        .get();
+    return snap.docs.isNotEmpty;
+  }
+
   // Get booked courts for a sport/date/slot 
+  // Also returns ALL courts as booked if an event is scheduled that day
   Future<Set<int>> getBookedCourts({
     required String sport,
     required String date,
     required String timeSlot,
   }) async {
+    // Check for event day first
+    final eventDay = await isEventDay(sport: sport, dateStr: date);
+    if (eventDay) {
+      // Block all courts — event has reserved this sport on this date
+      final total = courtCounts[sport] ?? 4;
+      return Set<int>.from(List.generate(total, (i) => i + 1));
+    }
+
     final snap = await _col
         .where('sport', isEqualTo: sport)
         .where('date', isEqualTo: date)
         .where('timeSlot', isEqualTo: timeSlot)
         .where('status', isEqualTo: 'confirmed')
         .get();
-    return snap.docs
-        .map((d) => (d.data()['court'] as int))
-        .toSet();
+    return snap.docs.map((d) => (d.data()['court'] as int)).toSet();
   }
 
   // Submit booking with double-booking check (transaction) 
   Future<void> submit(BookingModel booking) async {
     await FirebaseFirestore.instance.runTransaction((tx) async {
+      // Also check event day block
+      final eventDay = await isEventDay(
+          sport: booking.sport, dateStr: booking.date);
+      if (eventDay) {
+        throw Exception(
+            'This court is reserved for a sports event on ${booking.date}. Daily booking is unavailable.');
+      }
+
       final existing = await _col
           .where('sport', isEqualTo: booking.sport)
           .where('date', isEqualTo: booking.date)
@@ -65,12 +98,10 @@ class BookingRepository {
           .get();
 
       if (existing.docs.isNotEmpty) {
-        throw Exception(
-            'Court ${booking.court} is already booked for this slot.');
+        throw Exception('Court ${booking.court} is already booked for this slot.');
       }
 
-      final ref = _col.doc();
-      tx.set(ref, booking.toMap());
+      tx.set(_col.doc(), booking.toMap());
     });
   }
 
@@ -79,15 +110,13 @@ class BookingRepository {
       .where('userId', isEqualTo: userId)
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => BookingModel.fromMap(d.id, d.data()))
-          .toList());
+      .map((s) =>
+          s.docs.map((d) => BookingModel.fromMap(d.id, d.data())).toList());
 
   // All bookings (admin/organiser) 
   Stream<List<BookingModel>> watchAll() => _col
       .orderBy('createdAt', descending: true)
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => BookingModel.fromMap(d.id, d.data()))
-          .toList());
+      .map((s) =>
+          s.docs.map((d) => BookingModel.fromMap(d.id, d.data())).toList());
 }
