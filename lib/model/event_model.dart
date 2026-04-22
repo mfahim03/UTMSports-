@@ -3,21 +3,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class EventModel {
   final String id;
   final String title;
-  final String date;      // Display string e.g. "10 Jan 2025"
-  final String dateStr;   // YYYY-MM-DD
+  final String date;      // Display string e.g. "10 Jan 2025" or "10–12 Jan 2025"
+  final String dateStr;   // YYYY-MM-DD (start date)
+  final String? dateStrEnd; // YYYY-MM-DD (end date, null = single day)
+  final String? dateEnd;    // Display string for end date (null = single day)
   final String location;
   final String category;
   final String? description;
   final String createdBy;
   final DateTime createdAt;
 
-  // Player / team configuration 
+  // Player / team configuration
   final int minPlayers;
   final int? maxPlayers;
   final int? maxTeams;          // null = unlimited teams
   final List<String> badmintonTypes;
 
-  // Registration 
+  // Registration
   final bool registrationOpen;
 
   const EventModel({
@@ -25,6 +27,8 @@ class EventModel {
     required this.title,
     required this.date,
     required this.dateStr,
+    this.dateStrEnd,
+    this.dateEnd,
     required this.location,
     required this.category,
     this.description,
@@ -37,10 +41,13 @@ class EventModel {
     this.registrationOpen = true,
   });
 
-  // Registration closes at end of event day 
+  // ── Date helpers ──────────────────────────────────────────────────────────
+
+  /// True once the last day of the event has fully passed (after 23:59:59).
   bool get isEventPassed {
     try {
-      final parts = dateStr.split('-');
+      final endStr = dateStrEnd ?? dateStr;
+      final parts  = endStr.split('-');
       if (parts.length != 3) return false;
       final eventDate = DateTime(
           int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
@@ -52,7 +59,17 @@ class EventModel {
     }
   }
 
-  // Preset defaults per sport 
+  /// True if [d] (YYYY-MM-DD) falls within this event's date range.
+  bool containsDate(String d) {
+  final end = dateStrEnd ?? dateStr;
+  return d.compareTo(dateStr) >= 0 && d.compareTo(end) <= 0;
+}
+
+  /// Whether this is a multi-day event.
+  bool get isMultiDay =>
+      dateStrEnd != null && dateStrEnd!.isNotEmpty && dateStrEnd != dateStr;
+
+  // ── Preset defaults per sport ─────────────────────────────────────────────
   static Map<String, dynamic> defaultsFor(String category) {
     return switch (category) {
       'Futsal'         => {'min': 5,  'max': 7,    'badminton': []},
@@ -69,6 +86,8 @@ class EventModel {
         title: map['title'] ?? '',
         date: map['date'] ?? '',
         dateStr: map['dateStr'] ?? '',
+        dateStrEnd: map['dateStrEnd'] as String?,
+        dateEnd: map['dateEnd'] as String?,
         location: map['location'] ?? '',
         category: map['category'] ?? '',
         description: map['description'],
@@ -86,6 +105,8 @@ class EventModel {
         'title': title,
         'date': date,
         'dateStr': dateStr,
+        if (dateStrEnd != null) 'dateStrEnd': dateStrEnd,
+        if (dateEnd != null) 'dateEnd': dateEnd,
         'location': location,
         'category': category,
         if (description != null) 'description': description,
@@ -102,6 +123,10 @@ class EventModel {
     String? title,
     String? date,
     String? dateStr,
+    String? dateStrEnd,
+    bool clearDateStrEnd = false,
+    String? dateEnd,
+    bool clearDateEnd = false,
     String? location,
     String? category,
     String? description,
@@ -118,6 +143,8 @@ class EventModel {
         title: title ?? this.title,
         date: date ?? this.date,
         dateStr: dateStr ?? this.dateStr,
+        dateStrEnd: clearDateStrEnd ? null : (dateStrEnd ?? this.dateStrEnd),
+        dateEnd: clearDateEnd ? null : (dateEnd ?? this.dateEnd),
         location: location ?? this.location,
         category: category ?? this.category,
         description: description ?? this.description,
@@ -130,7 +157,7 @@ class EventModel {
         registrationOpen: registrationOpen ?? this.registrationOpen,
       );
 
-  // Helpers 
+  // ── Helpers ───────────────────────────────────────────────────────────────
   bool get isBadminton => category == 'Badminton';
 
   String get spotsLabel {

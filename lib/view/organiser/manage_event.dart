@@ -212,6 +212,11 @@ class _ManageEventsContent extends StatelessWidget {
               final col  = _colors[e.category] ?? _T.maroon;
               final icon = _icons[e.category] ?? Icons.emoji_events;
 
+              // Date display: show range if multi-day
+              final dateLabel = e.isMultiDay
+                  ? '${e.date} – ${e.dateEnd ?? e.date}'
+                  : e.date;
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
@@ -250,10 +255,27 @@ class _ManageEventsContent extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis),
                                 const SizedBox(height: 3),
-                                Text('${e.date}  ·  ${e.location}',
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: _T.textSec)),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      e.isMultiDay
+                                          ? Icons.date_range_outlined
+                                          : Icons.calendar_today_outlined,
+                                      size: 11,
+                                      color: _T.textSec,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        '$dateLabel  ·  ${e.location}',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            color: _T.textSec),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                                 const SizedBox(height: 6),
                                 Wrap(
                                   spacing: 6,
@@ -379,7 +401,6 @@ class _EventForm extends StatefulWidget {
 class _EventFormState extends State<_EventForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _titleCtrl;
-  late final TextEditingController _dateCtrl;
   late final TextEditingController _locationCtrl;
   late final TextEditingController _descCtrl;
   late final TextEditingController _minCtrl;
@@ -389,22 +410,46 @@ class _EventFormState extends State<_EventForm> {
   late String _category;
   late bool _regOpen;
   late List<String> _badmintonTypes;
-  bool _maxUnlimited    = false;
+  bool _maxUnlimited      = false;
   bool _maxTeamsUnlimited = true;
-  DateTime? _selectedDate;
+
+  // Date range state
+  DateTime? _startDate;
+  DateTime? _endDate; // null = single-day event
 
   static const _categories = [
     'Futsal', 'Volleyball', 'Badminton', 'PUBG',
     'Mobile Legends', 'Running', 'Squash', 'Table Tennis', 'Other'
   ];
   static const _badmintonOptions = ['Solo', 'Double', 'Mixed'];
+  static const _months = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
 
+  // ── Date helpers ───────────────────────────────────────────────────────────
+  String _fmt(DateTime d) => '${d.day} ${_months[d.month]} ${d.year}';
+  String _ds(DateTime d)  =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  // Organiser may schedule events up to 1 month in advance (minimum 30 days
+  // from today so students have time to register).
+  DateTime get _minEventDate {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day + 30);
+  }
+
+  DateTime get _maxEventDate {
+    final now = DateTime.now();
+    return DateTime(now.year + 1, now.month, now.day);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
   @override
   void initState() {
     super.initState();
     final e = widget.existing;
     _titleCtrl    = TextEditingController(text: e?.title ?? '');
-    _dateCtrl     = TextEditingController(text: e?.date ?? '');
     _locationCtrl = TextEditingController(text: e?.location ?? '');
     _descCtrl     = TextEditingController(text: e?.description ?? '');
     _category     = e?.category ?? 'Futsal';
@@ -413,11 +458,21 @@ class _EventFormState extends State<_EventForm> {
     _maxUnlimited   = e?.maxPlayers == null;
     _maxTeamsUnlimited = e?.maxTeams == null;
 
+    // Restore existing dates
     if (e != null && e.dateStr.isNotEmpty) {
       try {
         final p = e.dateStr.split('-');
-        _selectedDate = DateTime(
+        _startDate = DateTime(
             int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+      } catch (_) {}
+    }
+    if (e != null && (e.dateStrEnd?.isNotEmpty ?? false)) {
+      try {
+        final p = e.dateStrEnd!.split('-');
+        _endDate = DateTime(
+            int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
+        // If end == start it's still single-day
+        if (_endDate == _startDate) _endDate = null;
       } catch (_) {}
     }
 
@@ -439,7 +494,6 @@ class _EventFormState extends State<_EventForm> {
   @override
   void dispose() {
     _titleCtrl.dispose();
-    _dateCtrl.dispose();
     _locationCtrl.dispose();
     _descCtrl.dispose();
     _minCtrl.dispose();
@@ -448,6 +502,7 @@ class _EventFormState extends State<_EventForm> {
     super.dispose();
   }
 
+  // ── Category ───────────────────────────────────────────────────────────────
   void _onCategoryChanged(String cat) {
     final d = EventModel.defaultsFor(cat);
     setState(() {
@@ -465,9 +520,46 @@ class _EventFormState extends State<_EventForm> {
     });
   }
 
+  // ── Date range picker ──────────────────────────────────────────────────────
+  Future<void> _pickDateRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      firstDate: _minEventDate,
+      lastDate:  _maxEventDate,
+      initialDateRange: _startDate != null
+          ? DateTimeRange(
+              start: _startDate!,
+              end: _endDate ?? _startDate!)
+          : null,
+      helpText: 'Select event date range',
+      saveText: 'Confirm',
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: const ColorScheme.light(primary: _T.maroon),
+        ),
+        child: child!,
+      ),
+    );
+    if (range != null) {
+      setState(() {
+        _startDate = range.start;
+        // Treat same-day range as single day
+        _endDate = range.end.isAfter(range.start) ? range.end : null;
+      });
+    }
+  }
+
+  // ── Date display label for the picker button ───────────────────────────────
+  String get _dateRangeLabel {
+    if (_startDate == null) return 'Tap to pick event date(s)';
+    if (_endDate == null)   return _fmt(_startDate!);
+    return '${_fmt(_startDate!)}  –  ${_fmt(_endDate!)}';
+  }
+
+  // ── Submit ────────────────────────────────────────────────────────────────
   Future<void> _submit(EventViewModel vm) async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedDate == null) {
+    if (_startDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Please select an event date'),
         backgroundColor: Colors.red,
@@ -483,48 +575,53 @@ class _EventFormState extends State<_EventForm> {
         ? null
         : int.tryParse(_maxTeamsCtrl.text.trim());
 
-    final d = _selectedDate!;
-    const months = [
-      '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    final displayDate = '${d.day} ${months[d.month]} ${d.year}';
-    final dateStr =
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    // Build display string
+    final displayDate = _endDate != null
+        ? '${_fmt(_startDate!)} – ${_fmt(_endDate!)}'
+        : _fmt(_startDate!);
+    final dateStr    = _ds(_startDate!);
+    final dateStrEnd = _endDate != null ? _ds(_endDate!) : null;
+    final dateEnd    = _endDate != null ? _fmt(_endDate!) : null;
 
     final model = widget.existing != null
         ? widget.existing!.copyWith(
-            title: _titleCtrl.text.trim(),
-            date: displayDate,
-            dateStr: dateStr,
-            location: _locationCtrl.text.trim(),
-            category: _category,
-            description: _descCtrl.text.trim().isEmpty
+            title:        _titleCtrl.text.trim(),
+            date:         displayDate,
+            dateStr:      dateStr,
+            dateStrEnd:   dateStrEnd,
+            clearDateStrEnd: dateStrEnd == null,
+            dateEnd:      dateEnd,
+            clearDateEnd: dateEnd == null,
+            location:     _locationCtrl.text.trim(),
+            category:     _category,
+            description:  _descCtrl.text.trim().isEmpty
                 ? null
                 : _descCtrl.text.trim(),
-            minPlayers: minP,
-            maxPlayers: maxP,
-            clearMax: _maxUnlimited,
-            maxTeams: maxT,
+            minPlayers:   minP,
+            maxPlayers:   maxP,
+            clearMax:     _maxUnlimited,
+            maxTeams:     maxT,
             clearMaxTeams: _maxTeamsUnlimited,
             badmintonTypes: _badmintonTypes,
             registrationOpen: _regOpen,
           )
         : EventModel(
-            id: '',
-            title: _titleCtrl.text.trim(),
-            date: displayDate,
-            dateStr: dateStr,
-            location: _locationCtrl.text.trim(),
-            category: _category,
+            id:          '',
+            title:       _titleCtrl.text.trim(),
+            date:        displayDate,
+            dateStr:     dateStr,
+            dateStrEnd:  dateStrEnd,
+            dateEnd:     dateEnd,
+            location:    _locationCtrl.text.trim(),
+            category:    _category,
             description: _descCtrl.text.trim().isEmpty
                 ? null
                 : _descCtrl.text.trim(),
-            createdBy: uid,
-            createdAt: DateTime.now(),
-            minPlayers: minP,
-            maxPlayers: maxP,
-            maxTeams: maxT,
+            createdBy:   uid,
+            createdAt:   DateTime.now(),
+            minPlayers:  minP,
+            maxPlayers:  maxP,
+            maxTeams:    maxT,
             badmintonTypes: _badmintonTypes,
             registrationOpen: _regOpen,
           );
@@ -553,6 +650,7 @@ class _EventFormState extends State<_EventForm> {
     }
   }
 
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final vm     = context.watch<EventViewModel>();
@@ -585,7 +683,7 @@ class _EventFormState extends State<_EventForm> {
                       color: _T.textPri)),
               const SizedBox(height: 20),
 
-              // ── Category picker ───────────────────────────────────
+              // ── Category picker ─────────────────────────────────────
               const _Label('Sport / Category'),
               const SizedBox(height: 8),
               SizedBox(
@@ -632,73 +730,71 @@ class _EventFormState extends State<_EventForm> {
                   required: true),
               const SizedBox(height: 12),
 
-              // ── Date picker ───────────────────────────────────────
+              // ── Date range picker ───────────────────────────────────
+              const _Label('Event Date(s)'),
+              const SizedBox(height: 8),
               GestureDetector(
-                onTap: () async {
-                  final now     = DateTime.now();
-                  final minDate = DateTime(now.year, now.month, now.day + 1);
-                  final picked  = await showDatePicker(
-                    context: context,
-                    initialDate: _selectedDate ?? minDate,
-                    firstDate: minDate,
-                    lastDate: DateTime(now.year + 2),
-                    helpText: 'Select event date',
-                    builder: (ctx, child) => Theme(
-                      data: Theme.of(ctx).copyWith(
-                        colorScheme: const ColorScheme.light(
-                            primary: _T.maroon),
-                      ),
-                      child: child!,
-                    ),
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _selectedDate = picked;
-                      const m = [
-                        '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-                      ];
-                      _dateCtrl.text =
-                          '${picked.day} ${m[picked.month]} ${picked.year}';
-                    });
-                  }
-                },
-                child: AbsorbPointer(
-                  child: TextFormField(
-                    controller: _dateCtrl,
-                    validator: (_) => _selectedDate == null
-                        ? 'Please select a date'
-                        : null,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: 'Event Date',
-                      prefixIcon: const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 20),
-                      suffixIcon: _selectedDate != null
-                          ? null
-                          : const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 20),
-                      hintText: 'Tap to pick date',
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 14),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: Colors.grey.shade300)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(
-                              color: Colors.grey.shade300)),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                              color: _T.maroon, width: 1.8)),
+                onTap: _pickDateRange,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _startDate != null
+                          ? _T.maroon.withOpacity(0.5)
+                          : Colors.grey.shade300,
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _endDate != null
+                            ? Icons.date_range_outlined
+                            : Icons.calendar_today_outlined,
+                        size: 20,
+                        color: _startDate != null
+                            ? _T.maroon
+                            : Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _dateRangeLabel,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: _startDate != null
+                                ? _T.textPri
+                                : _T.textHint,
+                            fontWeight: _startDate != null
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.keyboard_arrow_down_rounded,
+                          size: 20, color: Colors.grey.shade400),
+                    ],
+                  ),
+                ),
+              ),
+              // Minimum-date notice
+              Padding(
+                padding: const EdgeInsets.only(top: 6, left: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded,
+                        size: 12, color: Colors.grey.shade400),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        'Events must be scheduled at least 30 days in advance so students have time to register.',
+                        style: TextStyle(
+                            fontSize: 11, color: Colors.grey.shade500),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
@@ -708,7 +804,7 @@ class _EventFormState extends State<_EventForm> {
                   required: true),
               const SizedBox(height: 16),
 
-              // ── Player config ─────────────────────────────────────
+              // ── Player config ───────────────────────────────────────
               const _Label('Player Size Per Team'),
               const SizedBox(height: 10),
               Row(
@@ -773,7 +869,7 @@ class _EventFormState extends State<_EventForm> {
               ),
               const SizedBox(height: 16),
 
-              // ── Max teams ─────────────────────────────────────────
+              // ── Max teams ───────────────────────────────────────────
               const _Label('Max Teams Allowed'),
               const SizedBox(height: 10),
               _maxTeamsUnlimited
@@ -824,7 +920,7 @@ class _EventFormState extends State<_EventForm> {
               ),
               const SizedBox(height: 16),
 
-              // ── Badminton formats ─────────────────────────────────
+              // ── Badminton formats ───────────────────────────────────
               if (_category == 'Badminton') ...[
                 const _Label('Available Formats'),
                 const SizedBox(height: 10),
@@ -875,7 +971,7 @@ class _EventFormState extends State<_EventForm> {
                 const SizedBox(height: 16),
               ],
 
-              // ── Registration open toggle ──────────────────────────
+              // ── Registration open toggle ────────────────────────────
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(

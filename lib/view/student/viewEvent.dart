@@ -27,30 +27,30 @@ class _ViewEventsContent extends StatelessWidget {
   final bool embedded;
   const _ViewEventsContent({required this.embedded});
 
-  static const _maroon     = Color(0xFF800000);
-  static const _bg         = Color(0xFFF4EFEF);
+  static const _maroon = Color(0xFF800000);
+  static const _bg     = Color(0xFFF4EFEF);
 
   static const _icons = <String, IconData>{
-    'Futsal':          Icons.sports_soccer,
-    'Volleyball':      Icons.sports_volleyball,
-    'Badminton':       Icons.sports_tennis,
-    'PUBG':            Icons.videogame_asset_rounded,
-    'Mobile Legends':  Icons.smartphone_rounded,
-    'Running':         Icons.directions_run,
-    'Squash':          Icons.sports_handball,
-    'Table Tennis':    Icons.sports_tennis,
-    'Other':           Icons.emoji_events,
+    'Futsal':         Icons.sports_soccer,
+    'Volleyball':     Icons.sports_volleyball,
+    'Badminton':      Icons.sports_tennis,
+    'PUBG':           Icons.videogame_asset_rounded,
+    'Mobile Legends': Icons.smartphone_rounded,
+    'Running':        Icons.directions_run,
+    'Squash':         Icons.sports_handball,
+    'Table Tennis':   Icons.sports_tennis,
+    'Other':          Icons.emoji_events,
   };
   static const _colors = <String, Color>{
-    'Futsal':          Color(0xFF0369A1),
-    'Volleyball':      Color(0xFF800000),
-    'Badminton':       Color(0xFF065F46),
-    'PUBG':            Color(0xFF5C3D8F),
-    'Mobile Legends':  Color(0xFF9A3412),
-    'Running':         Color(0xFF800000),
-    'Squash':          Color(0xFF065F46),
-    'Table Tennis':    Color(0xFF7C3AED),
-    'Other':           Color(0xFF6B6B6B),
+    'Futsal':         Color(0xFF0369A1),
+    'Volleyball':     Color(0xFF800000),
+    'Badminton':      Color(0xFF065F46),
+    'PUBG':           Color(0xFF5C3D8F),
+    'Mobile Legends': Color(0xFF9A3412),
+    'Running':        Color(0xFF800000),
+    'Squash':         Color(0xFF065F46),
+    'Table Tennis':   Color(0xFF7C3AED),
+    'Other':          Color(0xFF6B6B6B),
   };
 
   @override
@@ -117,7 +117,7 @@ class _ViewEventsContent extends StatelessWidget {
   }
 }
 
-//  EMBEDDED HEADER
+// ── EMBEDDED HEADER ───────────────────────────────────────────────────────────
 class _EmbeddedHeader extends StatelessWidget {
   final String title;
   final double topPadding;
@@ -151,7 +151,7 @@ class _EmbeddedHeader extends StatelessWidget {
   }
 }
 
-//  EVENT CARD
+// ── EVENT CARD ────────────────────────────────────────────────────────────────
 class _EventCard extends StatefulWidget {
   final EventModel event;
   final Color color;
@@ -172,6 +172,11 @@ class _EventCardState extends State<_EventCard> {
     final col = widget.color;
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
+    // Date display (supports date range)
+    final dateLabel = e.isMultiDay
+        ? '${e.date}'          // already formatted as range in model
+        : e.date;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
@@ -187,6 +192,7 @@ class _EventCardState extends State<_EventCard> {
       ),
       child: Column(
         children: [
+          // ── Card header ─────────────────────────────────────────────
           Container(
             decoration: BoxDecoration(
               color: col.withOpacity(0.06),
@@ -219,25 +225,22 @@ class _EventCardState extends State<_EventCard> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined,
-                              size: 11,
-                              color: Colors.grey.shade500),
-                          const SizedBox(width: 4),
-                          Text(e.date,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey.shade600)),
-                          const SizedBox(width: 10),
-                          Icon(Icons.location_on_outlined,
-                              size: 11,
-                              color: Colors.grey.shade500),
+                          Icon(
+                            e.isMultiDay
+                                ? Icons.date_range_outlined
+                                : Icons.calendar_today_outlined,
+                            size: 11,
+                            color: Colors.grey.shade500,
+                          ),
                           const SizedBox(width: 4),
                           Flexible(
-                            child: Text(e.location,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey.shade600),
-                                overflow: TextOverflow.ellipsis),
+                            child: Text(
+                              '$dateLabel  ·  ${e.location}',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
@@ -245,7 +248,8 @@ class _EventCardState extends State<_EventCard> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => setState(() => _expanded = !_expanded),
+                  onTap: () =>
+                      setState(() => _expanded = !_expanded),
                   child: Icon(
                     _expanded
                         ? Icons.keyboard_arrow_up_rounded
@@ -258,6 +262,7 @@ class _EventCardState extends State<_EventCard> {
             ),
           ),
 
+          // ── Chips row ────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
             child: Row(
@@ -284,6 +289,7 @@ class _EventCardState extends State<_EventCard> {
             ),
           ),
 
+          // ── Expanded section ─────────────────────────────────────────
           if (_expanded) ...[
             if (e.description != null)
               Padding(
@@ -299,84 +305,8 @@ class _EventCardState extends State<_EventCard> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: e.registrationOpen
-                  ? FutureBuilder<bool>(
-                      future: context
-                          .read<EventRegistrationViewModel>()
-                          .isRegistered(e.id, uid),
-                      builder: (_, snap) {
-                        final already = snap.data ?? false;
-                        return SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: already
-                              ? Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.shade50,
-                                    borderRadius:
-                                        BorderRadius.circular(12),
-                                    border: Border.all(
-                                        color: Colors.green.shade300),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.check_circle_rounded,
-                                          color: Colors.green.shade600,
-                                          size: 18),
-                                      const SizedBox(width: 8),
-                                      Text('Already Registered',
-                                          style: TextStyle(
-                                              color:
-                                                  Colors.green.shade700,
-                                              fontWeight:
-                                                  FontWeight.w700,
-                                              fontSize: 14)),
-                                    ],
-                                  ),
-                                )
-                              : ElevatedButton.icon(
-                                  onPressed: () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          EventRegistrationPage(
-                                              event: e),
-                                    ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: col,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                    elevation: 0,
-                                  ),
-                                  icon: const Icon(
-                                      Icons.how_to_reg_rounded,
-                                      size: 18),
-                                  label: const Text('Register Now',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14)),
-                                ),
-                        );
-                      },
-                    )
-                  : Container(
-                      width: double.infinity,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Center(
-                        child: Text('Registration Closed',
-                            style: TextStyle(
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600)),
-                      ),
-                    ),
+                  ? _RegistrationButton(event: e, col: col, uid: uid)
+                  : _ClosedButton(),
             ),
           ] else
             const SizedBox(height: 14),
@@ -386,7 +316,135 @@ class _EventCardState extends State<_EventCard> {
   }
 }
 
-//  SHARED WIDGETS
+// ── Registration button with full / already-registered / open states ──────────
+class _RegistrationButton extends StatelessWidget {
+  final EventModel event;
+  final Color col;
+  final String uid;
+
+  const _RegistrationButton({
+    required this.event,
+    required this.col,
+    required this.uid,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = context.read<EventRegistrationViewModel>();
+
+    return FutureBuilder<List<Object>>(
+      future: Future.wait([
+        vm.isRegistered(event.id, uid),
+        vm.confirmedTeamCount(event.id),
+      ]),
+      builder: (_, snap) {
+        final already    = (snap.data?[0] as bool?) ?? false;
+        final confirmed  = (snap.data?[1] as int?) ?? 0;
+        final isFull     = event.maxTeams != null &&
+            confirmed >= event.maxTeams!;
+
+        return SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: already
+              // Already registered
+              ? Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.shade300),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.check_circle_rounded,
+                          color: Colors.green.shade600, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Already Registered',
+                          style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14)),
+                    ],
+                  ),
+                )
+              : isFull
+                  // Slots full
+                  ? Container(
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border:
+                            Border.all(color: Colors.orange.shade300),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.people_outline_rounded,
+                              color: Colors.orange.shade700, size: 18),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Full — ${event.maxTeams} teams registered',
+                            style: TextStyle(
+                                color: Colors.orange.shade800,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    )
+                  // Open for registration
+                  : ElevatedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              EventRegistrationPage(event: event),
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: col,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.how_to_reg_rounded,
+                          size: 18),
+                      label: Text(
+                        event.maxTeams != null
+                            ? 'Register Now  (${event.maxTeams! - confirmed} slots left)'
+                            : 'Register Now',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w700, fontSize: 13),
+                      ),
+                    ),
+        );
+      },
+    );
+  }
+}
+
+class _ClosedButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Center(
+        child: Text('Registration Closed',
+            style: TextStyle(
+                color: Colors.grey, fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+}
+
+// ── SHARED WIDGETS ────────────────────────────────────────────────────────────
 class _Chip extends StatelessWidget {
   final String label;
   final Color color;

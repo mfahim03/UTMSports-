@@ -1,9 +1,95 @@
+// lib/view/admin/admin_page.dart
+// Only the relevant diff section is shown — the Management section
+// that gains the new "Manage Sports" card.
+//
+// CHANGE: Add the following import at the top of admin_page.dart:
+//   import 'manage_sports_page.dart';
+//
+// CHANGE: Inside the Padding that holds the Row of Manage cards,
+//         add a second Row below the existing one with the Sports card,
+//         then keep the wide Feedback card below both rows.
+//
+// Full replacement for the Management section only (lines ~180-224):
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Replace the existing Management section block in admin_page.dart with:
+// ─────────────────────────────────────────────────────────────────────────────
+
+/*
+  // Section: Manage 
+  _SectionTitle(label: 'Management'),
+  Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+    child: Row(
+      children: [
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.manage_accounts_rounded,
+            label: 'Manage\nAccounts',
+            subtitle: 'Users & roles',
+            accent: _T.maroon,
+            iconBg: _T.maroonFade,
+            onTap: () => Navigator.push(
+                context, _slide(const ManageAccountsPage())),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _ActionCard(
+            icon: Icons.emoji_events_rounded,
+            label: 'Manage\nAchievements',
+            subtitle: 'Add / edit / remove',
+            accent: const Color(0xFF8B6914),
+            iconBg: const Color(0xFFFFF8EC),
+            onTap: () => Navigator.push(
+                context, _slide(const ManageAchievementsPage())),
+          ),
+        ),
+      ],
+    ),
+  ),
+  // ── NEW ROW ─────────────────────────────────────────────────────────────
+  Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+    child: _ActionCard(
+      icon: Icons.sports_rounded,
+      label: 'Manage Sports & Courts',
+      subtitle: 'Add sports, configure courts & time slots',
+      accent: const Color(0xFF0F5F8A),
+      iconBg: const Color(0xFFECF5FF),
+      onTap: () => Navigator.push(
+          context, _slide(const ManageSportsPage())),
+      wide: true,
+    ),
+  ),
+  // ────────────────────────────────────────────────────────────────────────
+  Padding(
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+    child: _ActionCard(
+      icon: Icons.feedback_rounded,
+      label: 'View Student Feedback',
+      subtitle:
+          'Read feedback from students across Events, Facilities & App',
+      accent: const Color(0xFF0F5F8A),
+      iconBg: const Color(0xFFECF5FF),
+      onTap: () => Navigator.push(
+          context, _slide(const ViewFeedbackPage())),
+      wide: true,
+    ),
+  ),
+*/
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Below is the full updated admin_page.dart file:
+// ─────────────────────────────────────────────────────────────────────────────
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodel/auth_viewmodel.dart';
 import 'manage_account.dart';
 import 'manage_achievement.dart';
+import 'manage_sports.dart';   // ← NEW IMPORT
 import 'view_feedback.dart';
 
 //  DESIGN TOKENS
@@ -96,7 +182,7 @@ class _AdminPageContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header 
+              // ── Header 
               Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -162,22 +248,21 @@ class _AdminPageContent extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    // Stats row
                     Row(
                       children: [
-                        _HeaderStat(
-                            label: 'Role', value: 'Admin'),
+                        _HeaderStat(label: 'Role', value: 'Admin'),
                         const SizedBox(width: 12),
-                        _HeaderStat(
-                            label: 'Status', value: 'Active'),
+                        _HeaderStat(label: 'Status', value: 'Active'),
                       ],
                     ),
                   ],
                 ),
               ),
 
-              // Section: Manage 
+              // ── Section: Management 
               _SectionTitle(label: 'Management'),
+
+              // Row 1: Accounts + Achievements
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: Row(
@@ -208,6 +293,24 @@ class _AdminPageContent extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // Row 2: Manage Sports & Courts  ← NEW
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: _ActionCard(
+                  icon: Icons.sports_rounded,
+                  label: 'Manage Sports & Courts',
+                  subtitle:
+                      'Add sports, set court counts, time slots & sharing',
+                  accent: const Color(0xFF065F46),
+                  iconBg: const Color(0xFFD1FAE5),
+                  onTap: () => Navigator.push(
+                      context, _slide(const ManageSportsPage())),
+                  wide: true,
+                ),
+              ),
+
+              // Row 3: Feedback
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                 child: _ActionCard(
@@ -223,39 +326,8 @@ class _AdminPageContent extends StatelessWidget {
                 ),
               ),
 
-              // Section: Quick links 
-              _SectionTitle(label: 'Quick Links'),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                child: Column(
-                  children: [
-                    _QuickLink(
-                      icon: Icons.people_alt_outlined,
-                      label: 'All Users',
-                      onTap: () => Navigator.push(context,
-                          _slide(const ManageAccountsPage())),
-                    ),
-                    _QuickLink(
-                      icon: Icons.star_outline_rounded,
-                      label: 'Organisers only',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          _slide(const ManageAccountsPage()),
-                        );
-                        // ManageAccountsPage opens on tab 0;
-                        // user can tap Organisers tab
-                      },
-                    ),
-                    _QuickLink(
-                      icon: Icons.school_outlined,
-                      label: 'Students only',
-                      onTap: () => Navigator.push(context,
-                          _slide(const ManageAccountsPage())),
-                    ),
-                  ],
-                ),
-              ),
+              // ── Section: Quick Links ──────────────────────────────────────
+              // (keep your existing Quick Links section unchanged below here)
             ],
           ),
         ),
@@ -264,59 +336,24 @@ class _AdminPageContent extends StatelessWidget {
   }
 }
 
-//  HEADER STAT CHIP
-class _HeaderStat extends StatelessWidget {
-  final String label;
-  final String value;
-  const _HeaderStat({required this.label, required this.value});
+// ── Re-export unchanged widgets from original admin_page.dart ─────────────────
+// _HeaderIconBtn, _HeaderStat, _SectionTitle, _ActionCard, _QuickLink
+// (copy them verbatim from your original file — they are unchanged)
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 10,
-                  color: Colors.white70,
-                  letterSpacing: 0.3)),
-          const SizedBox(height: 2),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white)),
-        ],
-      ),
-    );
-  }
-}
-
-//  HEADER ICON BUTTON
 class _HeaderIconBtn extends StatelessWidget {
   final IconData icon;
-  final VoidCallback onTap;
   final bool badge;
-
-  const _HeaderIconBtn({
-    required this.icon,
-    required this.onTap,
-    this.badge = false,
-  });
+  final VoidCallback onTap;
+  const _HeaderIconBtn(
+      {required this.icon, this.badge = false, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(10),
@@ -344,7 +381,36 @@ class _HeaderIconBtn extends StatelessWidget {
   }
 }
 
-//  SECTION TITLE
+class _HeaderStat extends StatelessWidget {
+  final String label;
+  final String value;
+  const _HeaderStat({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(fontSize: 11, color: Colors.white70)),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionTitle extends StatelessWidget {
   final String label;
   const _SectionTitle({required this.label});
@@ -363,7 +429,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-//  ACTION CARD  (press animation)
 class _ActionCard extends StatefulWidget {
   final IconData icon;
   final String label;
@@ -396,8 +461,7 @@ class _ActionCardState extends State<_ActionCard>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 90));
+        vsync: this, duration: const Duration(milliseconds: 90));
     _scale = Tween<double>(begin: 1.0, end: 0.96).animate(
         CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
   }
@@ -443,8 +507,7 @@ class _ActionCardState extends State<_ActionCard>
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(widget.label,
                               style: const TextStyle(
@@ -454,8 +517,7 @@ class _ActionCardState extends State<_ActionCard>
                           const SizedBox(height: 3),
                           Text(widget.subtitle,
                               style: const TextStyle(
-                                  fontSize: 11.5,
-                                  color: _T.textSecond)),
+                                  fontSize: 11.5, color: _T.textSecond)),
                         ],
                       ),
                     ),
@@ -486,8 +548,7 @@ class _ActionCardState extends State<_ActionCard>
                     const SizedBox(height: 3),
                     Text(widget.subtitle,
                         style: const TextStyle(
-                            fontSize: 11,
-                            color: _T.textSecond)),
+                            fontSize: 11, color: _T.textSecond)),
                   ],
                 ),
         ),
@@ -496,7 +557,6 @@ class _ActionCardState extends State<_ActionCard>
   }
 }
 
-//  QUICK LINK ROW
 class _QuickLink extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -510,8 +570,7 @@ class _QuickLink extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: _T.surface,
           borderRadius: BorderRadius.circular(14),

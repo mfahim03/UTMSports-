@@ -20,12 +20,12 @@ class _BookFacilityContent extends StatelessWidget {
   final bool embedded;
   const _BookFacilityContent({required this.embedded});
 
-  static const _maroon     = Color(0xFF800000);
+  static const _maroon = Color(0xFF800000);
 
   @override
   Widget build(BuildContext context) {
     final mq   = MediaQuery.of(context);
-    final body = const _BookFacilityBody();
+    const body = _BookFacilityBody();
 
     if (embedded) {
       return Column(
@@ -53,7 +53,7 @@ class _BookFacilityContent extends StatelessWidget {
   }
 }
 
-// EMBEDDED HEADER — identical to ViewBookingPage
+// EMBEDDED HEADER
 class _EmbeddedHeader extends StatelessWidget {
   final String title;
   final double topPadding;
@@ -115,48 +115,122 @@ class _BookFacilityBody extends StatelessWidget {
                 const _SectionLabel(label: 'Date'),
                 const SizedBox(height: 16),
                 _Calendar(vm: vm),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _SectionLabel(label: 'Time Slot'),
-                const SizedBox(height: 14),
-                _TimeSlots(vm: vm),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          _Card(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const _SectionLabel(label: 'Select Court'),
-                    const Spacer(),
-                    if (vm.selectedSlot != null) ...[
-                      _Legend(color: _maroon, label: 'Available'),
-                      const SizedBox(width: 12),
+                // Legend for event-blocked dates
+                if (vm.eventBlockedDates.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
                       _Legend(
-                          color: Colors.grey.shade400,
-                          label: 'Booked'),
+                        color: Colors.amber.shade700,
+                        label: 'Event day (booking unavailable)',
+                        isEventDay: true,
+                      ),
                     ],
-                  ],
-                ),
-                const SizedBox(height: 14),
-                _CourtGrid(vm: vm),
+                  ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 16),
 
-          _BookButton(vm: vm),
+          // Show a banner if selected date is blocked
+          if (vm.isDateEventBlocked(vm.dateString))
+            _EventBlockedBanner(sport: vm.selectedSport)
+          else ...[
+            _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _SectionLabel(label: 'Time Slot'),
+                  const SizedBox(height: 14),
+                  _TimeSlots(vm: vm),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _Card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const _SectionLabel(label: 'Select Court'),
+                      const Spacer(),
+                      if (vm.selectedSlot != null) ...[
+                        _Legend(color: _maroon, label: 'Available'),
+                        const SizedBox(width: 12),
+                        _Legend(
+                            color: Colors.grey.shade400,
+                            label: 'Booked'),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _CourtGrid(vm: vm),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            _BookButton(vm: vm),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Event-blocked banner ──────────────────────────────────────────────────────
+class _EventBlockedBanner extends StatelessWidget {
+  final String sport;
+  const _EventBlockedBanner({required this.sport});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.amber.shade300),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: Colors.amber.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.event_busy_rounded,
+                color: Colors.amber.shade800, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$sport Facility Unavailable',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.amber.shade900),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This date is reserved for a scheduled $sport event. Daily court bookings are not available on event days. Please choose another date.',
+                  style: TextStyle(
+                      fontSize: 12.5,
+                      color: Colors.amber.shade800,
+                      height: 1.5),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -168,10 +242,10 @@ class _SportSelector extends StatelessWidget {
   const _SportSelector({required this.vm});
 
   static const _icons = <String, IconData>{
-    'Badminton': Icons.sports_tennis,
+    'Badminton':    Icons.sports_tennis,
     'Table Tennis': Icons.sports_handball,
-    'Volleyball': Icons.sports_volleyball,
-    'Squash': Icons.sports_baseball,
+    'Volleyball':   Icons.sports_volleyball,
+    'Squash':       Icons.sports_baseball,
   };
 
   @override
@@ -183,7 +257,7 @@ class _SportSelector extends StatelessWidget {
         itemCount: vm.sports.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
-          final sport = vm.sports[i];
+          final sport    = vm.sports[i];
           final selected = vm.selectedSport == sport;
           return GestureDetector(
             onTap: () => vm.setSport(sport),
@@ -195,22 +269,37 @@ class _SportSelector extends StatelessWidget {
                 color: selected ? const Color(0xFF800000) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: selected ? const Color(0xFF800000) : Colors.grey.shade200,
+                  color: selected
+                      ? const Color(0xFF800000)
+                      : Colors.grey.shade200,
                   width: selected ? 0 : 1,
                 ),
                 boxShadow: selected
-                    ? [BoxShadow(color: const Color(0xFF800000).withOpacity(0.25), blurRadius: 12, offset: const Offset(0, 4))]
+                    ? [
+                        BoxShadow(
+                            color: const Color(0xFF800000).withOpacity(0.25),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4))
+                      ]
                     : [],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(_icons[sport] ?? Icons.sports,
-                      color: selected ? Colors.white : const Color(0xFF800000), size: 26),
+                      color: selected
+                          ? Colors.white
+                          : const Color(0xFF800000),
+                      size: 26),
                   const SizedBox(height: 6),
                   Text(sport,
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: selected ? Colors.white : Colors.black87)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: selected
+                              ? Colors.white
+                              : Colors.black87)),
                 ],
               ),
             ),
@@ -226,41 +315,50 @@ class _SportBanner extends StatelessWidget {
   const _SportBanner({required this.sport});
 
   static const _gradients = <String, List<Color>>{
-    'Badminton': [Color(0xFF800000), Color(0xFFB91C1C)],
+    'Badminton':    [Color(0xFF800000), Color(0xFFB91C1C)],
     'Table Tennis': [Color(0xFF7C3AED), Color(0xFFA855F7)],
-    'Volleyball': [Color(0xFF0369A1), Color(0xFF0EA5E9)],
-    'Squash': [Color(0xFF065F46), Color(0xFF10B981)],
+    'Volleyball':   [Color(0xFF0369A1), Color(0xFF0EA5E9)],
+    'Squash':       [Color(0xFF065F46), Color(0xFF10B981)],
   };
-
   static const _icons = <String, IconData>{
-    'Badminton': Icons.sports_tennis,
+    'Badminton':    Icons.sports_tennis,
     'Table Tennis': Icons.sports_tennis,
-    'Volleyball': Icons.sports_volleyball,
-    'Squash': Icons.sports_handball,
+    'Volleyball':   Icons.sports_volleyball,
+    'Squash':       Icons.sports_handball,
   };
 
   @override
   Widget build(BuildContext context) {
-    final colors = _gradients[sport] ?? [const Color(0xFF800000), const Color(0xFFB91C1C)];
+    final colors =
+        _gradients[sport] ?? [const Color(0xFF800000), const Color(0xFFB91C1C)];
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       height: 80,
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: colors, begin: Alignment.centerLeft),
+        gradient:
+            LinearGradient(colors: colors, begin: Alignment.centerLeft),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Row(
           children: [
-            Icon(_icons[sport] ?? Icons.sports, color: Colors.white.withOpacity(0.3), size: 44),
+            Icon(_icons[sport] ?? Icons.sports,
+                color: Colors.white.withOpacity(0.3), size: 44),
             const SizedBox(width: 16),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(sport, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
-                Text('Court Reservation', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                Text(sport,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800)),
+                Text('Court Reservation',
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12)),
               ],
             ),
           ],
@@ -270,77 +368,173 @@ class _SportBanner extends StatelessWidget {
   }
 }
 
+// ── Calendar with event-blocked date support ──────────────────────────────────
 class _Calendar extends StatelessWidget {
   final BookingViewModel vm;
   const _Calendar({required this.vm});
 
-  static const _maroon = Color(0xFF800000);
+  static const _maroon       = Color(0xFF800000);
+  static const _eventColor   = Color(0xFFB45309); // amber-700
+  static const _eventBg      = Color(0xFFFEF3C7); // amber-100
+
+  String _toDateStr(int year, int month, int day) =>
+      '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
     final selected = vm.selectedDate;
-    final first = DateTime(selected.year, selected.month, 1);
-    final offset = first.weekday - 1;
-    final days = DateTime(selected.year, selected.month + 1, 0).day;
-    final today = DateTime.now();
+    final first    = DateTime(selected.year, selected.month, 1);
+    final offset   = first.weekday - 1;
+    final days     = DateTime(selected.year, selected.month + 1, 0).day;
+    final today    = DateTime.now();
 
     return Column(
       children: [
+        // Month navigation
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('${vm.getMonthName(selected.month)} ${selected.year}',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(
+                '${vm.getMonthName(selected.month)} ${selected.year}',
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.w700)),
             Row(
               children: [
-                _NavBtn(icon: Icons.chevron_left, onTap: () => vm.setDate(DateTime(selected.year, selected.month - 1, 1))),
+                _NavBtn(
+                    icon: Icons.chevron_left,
+                    onTap: () => vm.setDate(DateTime(
+                        selected.year, selected.month - 1, 1))),
                 const SizedBox(width: 4),
-                _NavBtn(icon: Icons.chevron_right, onTap: () => vm.setDate(DateTime(selected.year, selected.month + 1, 1))),
+                _NavBtn(
+                    icon: Icons.chevron_right,
+                    onTap: () => vm.setDate(DateTime(
+                        selected.year, selected.month + 1, 1))),
               ],
             ),
           ],
         ),
         const SizedBox(height: 12),
+        // Day headers
         Row(
           children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
               .map((d) => Expanded(
                     child: Text(d,
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade500)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade500)),
                   ))
               .toList(),
         ),
         const SizedBox(height: 8),
+        // Day cells
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 7, mainAxisSpacing: 4, crossAxisSpacing: 4, childAspectRatio: 1),
+              crossAxisCount: 7,
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 4,
+              childAspectRatio: 1),
           itemCount: offset + days,
           itemBuilder: (_, i) {
             if (i < offset) return const SizedBox();
-            final day = i - offset + 1;
+            final day  = i - offset + 1;
             final date = DateTime(selected.year, selected.month, day);
-            final isPast = date.isBefore(DateTime(today.year, today.month, today.day));
-            final isSelected = vm.isSameDay(date, selected);
-            final isToday = vm.isSameDay(date, today);
+            final ds   = _toDateStr(selected.year, selected.month, day);
+            final isPast = date.isBefore(
+                DateTime(today.year, today.month, today.day));
+            final isSelected   = vm.isSameDay(date, selected);
+            final isToday      = vm.isSameDay(date, today);
+            final isEventBlocked = vm.isDateEventBlocked(ds);
+
+            // Determine tap handler
+            VoidCallback? onTap;
+            if (!isPast && !isEventBlocked) {
+              onTap = () => vm.setDate(date);
+            } else if (!isPast && isEventBlocked) {
+              onTap = () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text(
+                        'This date is reserved for a sports event. Booking unavailable.'),
+                    backgroundColor: Colors.amber.shade800,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              };
+            }
+
+            // Cell decoration
+            Color? bgColor;
+            Border? border;
+
+            if (isSelected && !isEventBlocked) {
+              bgColor = _maroon;
+            } else if (isEventBlocked && !isPast) {
+              bgColor = _eventBg;
+              border  = Border.all(color: _eventColor.withOpacity(0.4));
+            } else if (isToday && !isSelected) {
+              bgColor = _maroon.withOpacity(0.08);
+              border  = Border.all(
+                  color: _maroon.withOpacity(0.4), width: 1);
+            }
+
+            // Text color
+            Color textColor;
+            if (isSelected && !isEventBlocked) {
+              textColor = Colors.white;
+            } else if (isPast) {
+              textColor = Colors.grey.shade300;
+            } else if (isEventBlocked) {
+              textColor = _eventColor;
+            } else {
+              textColor = Colors.black87;
+            }
 
             return GestureDetector(
-              onTap: isPast ? null : () => vm.setDate(date),
+              onTap: onTap,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 decoration: BoxDecoration(
-                  color: isSelected ? _maroon : isToday ? _maroon.withOpacity(0.08) : Colors.transparent,
+                  color: bgColor ?? Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  border: isToday && !isSelected ? Border.all(color: _maroon.withOpacity(0.4), width: 1) : null,
+                  border: border,
                 ),
-                child: Center(
-                  child: Text('$day',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isSelected || isToday ? FontWeight.w700 : FontWeight.w400,
-                        color: isSelected ? Colors.white : isPast ? Colors.grey.shade300 : Colors.black87,
-                      )),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Center(
+                      child: Text(
+                        '$day',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight:
+                              isSelected || isToday || isEventBlocked
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                          color: textColor,
+                        ),
+                      ),
+                    ),
+                    // Small event dot at bottom
+                    if (isEventBlocked && !isPast)
+                      Positioned(
+                        bottom: 3,
+                        child: Container(
+                          width: 4,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: _eventColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             );
@@ -361,8 +555,11 @@ class _NavBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 32, height: 32,
-        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(8)),
         child: Icon(icon, size: 18, color: const Color(0xFF800000)),
       ),
     );
@@ -378,21 +575,36 @@ class _TimeSlots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 8, runSpacing: 8,
+      spacing: 8,
+      runSpacing: 8,
       children: vm.slots.map((slot) {
         final selected = vm.selectedSlot == slot;
         return GestureDetector(
           onTap: () => vm.setSlot(slot),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
             decoration: BoxDecoration(
               color: selected ? _maroon : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: selected ? _maroon : Colors.grey.shade200, width: selected ? 0 : 1),
-              boxShadow: selected ? [BoxShadow(color: _maroon.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 2))] : [],
+              border: Border.all(
+                  color: selected ? _maroon : Colors.grey.shade200,
+                  width: selected ? 0 : 1),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                          color: _maroon.withOpacity(0.2),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2))
+                    ]
+                  : [],
             ),
-            child: Text(slot, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: selected ? Colors.white : Colors.black87)),
+            child: Text(slot,
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? Colors.white : Colors.black87)),
           ),
         );
       }).toList(),
@@ -412,13 +624,18 @@ class _CourtGrid extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.touch_app_outlined, color: Colors.grey.shade400, size: 20),
+            Icon(Icons.touch_app_outlined,
+                color: Colors.grey.shade400, size: 20),
             const SizedBox(width: 8),
-            Text('Select a time slot first', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+            Text('Select a time slot first',
+                style:
+                    TextStyle(color: Colors.grey.shade400, fontSize: 13)),
           ],
         ),
       );
@@ -427,18 +644,24 @@ class _CourtGrid extends StatelessWidget {
     if (vm.loadingCourts) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 20),
-        child: Center(child: CircularProgressIndicator(color: _maroon, strokeWidth: 2)),
+        child: Center(
+            child: CircularProgressIndicator(
+                color: _maroon, strokeWidth: 2)),
       );
     }
 
     return GridView.builder(
-      shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.9),
+          crossAxisCount: 4,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.9),
       itemCount: vm.courtCount,
       itemBuilder: (_, i) {
-        final court = i + 1;
-        final isBooked = vm.bookedCourts.contains(court);
+        final court      = i + 1;
+        final isBooked   = vm.bookedCourts.contains(court);
         final isSelected = vm.selectedCourt == court;
 
         return GestureDetector(
@@ -446,26 +669,61 @@ class _CourtGrid extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             decoration: BoxDecoration(
-              color: isSelected ? _maroon : isBooked ? Colors.grey.shade100 : Colors.white,
+              color: isSelected
+                  ? _maroon
+                  : isBooked
+                      ? Colors.grey.shade100
+                      : Colors.white,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: isSelected ? _maroon : isBooked ? Colors.grey.shade200 : _maroon.withOpacity(0.25),
+                  color: isSelected
+                      ? _maroon
+                      : isBooked
+                          ? Colors.grey.shade200
+                          : _maroon.withOpacity(0.25),
                   width: isSelected ? 0 : 1),
-              boxShadow: isSelected ? [BoxShadow(color: _maroon.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 3))] : [],
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                          color: _maroon.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3))
+                    ]
+                  : [],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(isBooked ? Icons.lock_rounded : Icons.sports_tennis, size: 20,
-                    color: isSelected ? Colors.white : isBooked ? Colors.grey.shade400 : _maroon),
+                Icon(
+                    isBooked
+                        ? Icons.lock_rounded
+                        : Icons.sports_tennis,
+                    size: 20,
+                    color: isSelected
+                        ? Colors.white
+                        : isBooked
+                            ? Colors.grey.shade400
+                            : _maroon),
                 const SizedBox(height: 5),
                 Text('Court $court',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                        color: isSelected ? Colors.white : isBooked ? Colors.grey.shade400 : Colors.black87)),
+                    style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isSelected
+                            ? Colors.white
+                            : isBooked
+                                ? Colors.grey.shade400
+                                : Colors.black87)),
                 const SizedBox(height: 2),
                 Text(isBooked ? 'Booked' : 'Free',
-                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white.withOpacity(0.8) : isBooked ? Colors.grey.shade400 : Colors.green.shade600)),
+                    style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w600,
+                        color: isSelected
+                            ? Colors.white.withOpacity(0.8)
+                            : isBooked
+                                ? Colors.grey.shade400
+                                : Colors.green.shade600)),
               ],
             ),
           ),
@@ -481,38 +739,65 @@ class _BookButton extends StatelessWidget {
 
   static const _maroon = Color(0xFF800000);
 
-  bool get _canBook => vm.selectedSlot != null && vm.selectedCourt != null && !vm.busy;
+  bool get _canBook =>
+      vm.selectedSlot != null && vm.selectedCourt != null && !vm.busy;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity, height: 54,
+      width: double.infinity,
+      height: 54,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
           gradient: _canBook
-              ? const LinearGradient(colors: [Color(0xFF800000), Color(0xFFB91C1C)], begin: Alignment.centerLeft, end: Alignment.centerRight)
+              ? const LinearGradient(
+                  colors: [Color(0xFF800000), Color(0xFFB91C1C)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight)
               : null,
           color: _canBook ? null : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: _canBook ? [BoxShadow(color: _maroon.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 5))] : [],
+          boxShadow: _canBook
+              ? [
+                  BoxShadow(
+                      color: _maroon.withOpacity(0.35),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5))
+                ]
+              : [],
         ),
         child: ElevatedButton(
           onPressed: _canBook ? () => _submit(context) : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent, shadowColor: Colors.transparent,
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
             disabledBackgroundColor: Colors.transparent,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16)),
           ),
           child: vm.busy
-              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: Colors.white))
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_outline_rounded, color: _canBook ? Colors.white : Colors.grey.shade400, size: 20),
+                    Icon(Icons.check_circle_outline_rounded,
+                        color: _canBook
+                            ? Colors.white
+                            : Colors.grey.shade400,
+                        size: 20),
                     const SizedBox(width: 8),
                     Text('Confirm Booking',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _canBook ? Colors.white : Colors.grey.shade400)),
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: _canBook
+                                ? Colors.white
+                                : Colors.grey.shade400)),
                   ],
                 ),
         ),
@@ -524,37 +809,50 @@ class _BookButton extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final ok = await vm.submit(userId: user.uid, userEmail: user.email ?? '');
+    final ok = await vm.submit(
+        userId: user.uid, userEmail: user.email ?? '');
     if (!context.mounted) return;
 
     if (ok) {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
           contentPadding: const EdgeInsets.all(28),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 64, height: 64,
-                decoration: const BoxDecoration(color: Color(0xFFDCFCE7), shape: BoxShape.circle),
-                child: const Icon(Icons.check_rounded, color: Color(0xFF16A34A), size: 36),
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                    color: Color(0xFFDCFCE7), shape: BoxShape.circle),
+                child: const Icon(Icons.check_rounded,
+                    color: Color(0xFF16A34A), size: 36),
               ),
               const SizedBox(height: 16),
-              const Text('Booking Confirmed!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const Text('Booking Confirmed!',
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               Text('Your court has been reserved successfully.',
-                  textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.grey.shade600, fontSize: 13)),
               const SizedBox(height: 20),
               SizedBox(
-                width: double.infinity, height: 46,
+                width: double.infinity,
+                height: 46,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: _maroon, foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Done', style: TextStyle(fontWeight: FontWeight.w700)),
+                      backgroundColor: _maroon,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12))),
+                  child: const Text('Done',
+                      style: TextStyle(fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -578,9 +876,12 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity, padding: const EdgeInsets.all(18),
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(18), border: Border.all(color: Colors.grey.shade100)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.grey.shade100)),
       child: child,
     );
   }
@@ -592,23 +893,43 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.black87));
+    return Text(label,
+        style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: Colors.black87));
   }
 }
 
 class _Legend extends StatelessWidget {
   final Color color;
   final String label;
-  const _Legend({required this.color, required this.label});
+  final bool isEventDay;
+  const _Legend({
+    required this.color,
+    required this.label,
+    this.isEventDay = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: isEventDay ? const Color(0xFFFEF3C7) : color,
+            shape: BoxShape.circle,
+            border: isEventDay
+                ? Border.all(color: color, width: 1.5)
+                : null,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(label,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
       ],
     );
   }
